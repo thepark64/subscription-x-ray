@@ -1,0 +1,20 @@
+SUBSCRIPTION X-RAY V3 — START HERE
+
+1. Install Node.js 20 or newer.
+2. Run: npm install
+3. Copy .env.example to .env.local and fill in your Supabase values.
+4. Run supabase/schema.sql in your Supabase SQL Editor.
+5. Configure Supabase Auth Site URL + Redirect URLs (see README.md).
+6. Add Razorpay test keys and webhook secret to .env.local.
+7. Run: npm run dev
+8. Open http://localhost:3000
+
+Before a real launch:
+- Configure Razorpay webhook: https://YOUR_DOMAIN/api/razorpay/webhook
+- Subscribe to payment.captured.
+- Run all checks in README.md with Razorpay TEST mode.
+- Review legal pages with a qualified professional.
+- Never commit .env.local or server secrets.
+
+This archive is source code. It is not connected to your Supabase, Razorpay,
+GitHub, or Vercel accounts, and has not been deployed by this archive build.
