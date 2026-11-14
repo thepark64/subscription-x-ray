@@ -74,7 +74,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const order = await orderRes.json();
+  let order: {
+    order_id?: string;
+    order_currency?: string;
+    order_amount?: number;
+    order_status?: string;
+    order_tags?: { user_id?: string; pack_size?: string };
+  };
+  try {
+    order = JSON.parse(await orderRes.text());
+  } catch {
+    return NextResponse.json(
+      { error: "Unexpected non-JSON response from Cashfree order lookup." },
+      { status: 502 }
+    );
+  }
   if (
     order?.order_id !== orderId ||
     order?.order_currency !== "INR" ||
@@ -110,7 +124,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const payments = (await paymentsRes.json()) as CashfreePayment[];
+  let payments: CashfreePayment[];
+  try {
+    payments = JSON.parse(await paymentsRes.text()) as CashfreePayment[];
+  } catch {
+    return NextResponse.json(
+      { error: "Unexpected non-JSON response from Cashfree payments lookup." },
+      { status: 502 }
+    );
+  }
   const paidAttempt = Array.isArray(payments)
     ? payments.find(
         (p) =>

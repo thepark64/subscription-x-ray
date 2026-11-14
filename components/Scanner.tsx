@@ -1,10 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { AlertCircle, ArrowUpRight, Lock, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  Loader2,
+  Lock,
+  Search,
+  Upload,
+  X,
+} from "lucide-react";
 import { analyzeCsv, type ScanResult } from "@/lib/detection";
+import {
+  buildCategoryOptions,
+  filterSubscriptions,
+  getSubscriptionCategory,
+  type CategoryFilter,
+} from "@/lib/subscriptionFilter";
 import { supabase } from "@/lib/supabaseClient";
+import SpendingTrendChart from "@/components/SpendingTrendChart";
 
 type PastScan = {
   id: string;
@@ -13,7 +28,34 @@ type PastScan = {
   monthly_total: number;
 };
 
+type ScanPhase = "idle" | "reading" | "parsing" | "saving";
+
+const PHASE_COPY: Record<Exclude<ScanPhase, "idle">, { title: string; detail: string }> = {
+  reading: {
+    title: "Reading CSV file…",
+    detail: "Loading your statement locally in the browser.",
+  },
+  parsing: {
+    title: "Detecting recurring charges…",
+    detail: "Grouping merchants and checking billing intervals on your device.",
+  },
+  saving: {
+    title: "Finalizing scan results…",
+    detail: "Updating your scan credit and saving the summary to your history.",
+  },
+};
+
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+function yieldToPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
+      window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+}
 
 export default function Scanner({
   userId,
@@ -31,20 +73,68 @@ export default function Scanner({
   const [filename, setFilename] = useState("");
   const [saveNotice, setSaveNotice] = useState("");
   const [pastScans, setPastScans] = useState<PastScan[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [phase, setPhase] = useState<ScanPhase>("idle");
+  const [dragging, setDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const busy = phase !== "idle";
 
   const annual = useMemo(
     () => (result ? result.monthlyTotal * 12 : 0),
     [result]
   );
 
+  const categoryOptions = useMemo(
+    () => (result ? buildCategoryOptions(result.subscriptions) : []),
+    [result]
+  );
+
+  const filteredSubscriptions = useMemo(
+    () =>
+      result
+        ? filterSubscriptions(result.subscriptions, searchQuery, selectedCategory)
+        : [],
+    [result, searchQuery, selectedCategory]
+  );
+
+  const filteredMonthlyTotal = useMemo(
+    () => filteredSubscriptions.reduce((sum, s) => sum + s.monthlyEquivalent, 0),
+    [filteredSubscriptions]
+  );
+
+  const isFiltered =
+    searchQuery.trim().length > 0 || selectedCategory !== "All";
+
+  function resetFilters() {
+    setSearchQuery("");
+    setSelectedCategory("All");
+  }
+
   useEffect(() => {
+    let active = true;
+    setHistoryLoading(true);
     supabase
       .from("scans")
       .select("id, scanned_at, subscription_count, monthly_total")
       .eq("user_id", userId)
       .order("scanned_at", { ascending: false })
-      .then(({ data }) => setPastScans(data ?? []));
+      .then(
+        ({ data }) => {
+          if (!active) return;
+          setPastScans(data ?? []);
+          setHistoryLoading(false);
+        },
+        () => {
+          if (!active) return;
+          setHistoryLoading(false);
+        }
+      );
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
   async function saveScan(data: ScanResult) {
@@ -116,10 +206,16 @@ export default function Scanner({
       return;
     }
 
-    setBusy(true);
+    setPhase("reading");
     try {
-      const data = analyzeCsv(await file.text());
+      const csvText = await file.text();
 
+      setPhase("parsing");
+      // Yield a frame so the loading indicator paints before synchronous CSV parsing.
+      await yieldToPaint();
+      const data = analyzeCsv(csvText);
+
+      setPhase("saving");
       const spent = await spendCredit();
       if (!spent) {
         setResult(null);
@@ -130,12 +226,14 @@ export default function Scanner({
       }
 
       setResult(data);
+      setSearchQuery("");
+      setSelectedCategory("All");
       await saveScan(data);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : "Could not read this CSV.");
     } finally {
-      setBusy(false);
+      setPhase("idle");
     }
   }
 
@@ -145,8 +243,30 @@ export default function Scanner({
     if (file) void handleFile(file);
   }
 
+  function onDragOver(event: React.DragEvent<HTMLDivElement>) {
+    if (busy || locked) return;
+    event.preventDefault();
+    setDragging(true);
+  }
+
+  function onDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setDragging(false);
+    }
+  }
+
+  function onDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragging(false);
+    if (busy || locked) return;
+    const file = event.dataTransfer.files?.[0];
+    if (file) void handleFile(file);
+  }
+
+  const phaseInfo = phase !== "idle" ? PHASE_COPY[phase] : null;
+
   return (
-    <div className="scanner">
+    <div className="scanner" aria-busy={busy}>
       <div className="scanner-header">
         <div>
           <p className="eyebrow">Statement scan</p>
@@ -157,8 +277,15 @@ export default function Scanner({
           </p>
         </div>
         {!locked && (
-          <label className="btn btn-primary upload-btn">
-            <Upload size={16} aria-hidden="true" />
+          <label
+            className="btn btn-primary upload-btn"
+            aria-disabled={busy}
+          >
+            {busy ? (
+              <Loader2 size={16} className="spin-icon" aria-hidden="true" />
+            ) : (
+              <Upload size={16} aria-hidden="true" />
+            )}
             <span>{busy ? "Scanning…" : "Choose CSV"}</span>
             <input
               type="file"
@@ -183,18 +310,41 @@ export default function Scanner({
           {paywall}
         </div>
       ) : (
-        <div className="glass-panel dropzone">
-          <div className="dropzone-icon" aria-hidden="true">
-            <Upload size={22} />
+        <div
+          className={`glass-panel dropzone${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}`}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
+          <div
+            className={`dropzone-icon${busy ? " is-busy" : ""}`}
+            aria-hidden="true"
+          >
+            {busy ? (
+              <Loader2 size={22} className="spin-icon" />
+            ) : (
+              <Upload size={22} />
+            )}
           </div>
-          <h2>Drop your statement here</h2>
+          <h2>
+            {busy
+              ? phaseInfo?.title
+              : dragging
+                ? "Release to scan statement"
+                : "Drop your statement here"}
+          </h2>
           <p>
-            CSV files with date, description/narration and amount (or debit)
-            columns work best.
+            {busy
+              ? phaseInfo?.detail
+              : "CSV files with date, description/narration and amount (or debit) columns work best."}
           </p>
-          <label className="btn btn-primary">
-            {busy ? "Scanning…" : "Select statement"}
+          <label className="btn btn-primary" aria-disabled={busy}>
+            {busy && (
+              <Loader2 size={16} className="spin-icon" aria-hidden="true" />
+            )}
+            <span>{busy ? "Processing CSV…" : "Select statement"}</span>
             <input
+              ref={fileInputRef}
               className="hidden-input"
               type="file"
               accept=".csv,text/csv"
@@ -206,15 +356,54 @@ export default function Scanner({
         </div>
       )}
 
+      {busy && phaseInfo && (
+        <div className="results" role="status" aria-live="polite">
+          <div className="glass-panel scan-progress-banner">
+            <Loader2
+              size={20}
+              className="spin-icon"
+              style={{ color: "var(--teal)", flexShrink: 0 }}
+              aria-hidden="true"
+            />
+            <div className="scan-progress-text">
+              <strong>{phaseInfo.title}</strong>
+              <span>
+                {filename ? `${filename} · ` : ""}
+                {phaseInfo.detail}
+              </span>
+            </div>
+          </div>
+
+          <div className="glass-panel result-grid" style={{ marginTop: 16 }}>
+            <div className="metric">
+              <div className="skeleton-bar skeleton-bar-sm" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+            </div>
+            <div className="metric">
+              <div className="skeleton-bar skeleton-bar-sm" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+            </div>
+            <div className="metric">
+              <div className="skeleton-bar skeleton-bar-sm" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="error-box" role="alert">
-          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+          <AlertCircle
+            size={16}
+            style={{ flexShrink: 0, marginTop: 2 }}
+            aria-hidden="true"
+          />
           <span>{error}</span>
         </div>
       )}
       {saveNotice && <div className="notice-box">{saveNotice}</div>}
 
-      {result && (
+      {!busy && result && (
         <motion.div
           className="results"
           initial={{ opacity: 0, y: 8 }}
@@ -264,39 +453,133 @@ export default function Scanner({
           </div>
 
           {result.subscriptions.length > 0 ? (
-            <div className="glass-panel subscription-list">
-              {result.subscriptions.map((sub, i) => (
+            <>
+              <div className="results-toolbar">
+                <div className="results-search">
+                  <Search
+                    size={16}
+                    className="results-search-icon"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by merchant, category, or cadence…"
+                    aria-label="Search detected subscriptions"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="results-search-clear"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search"
+                    >
+                      <X size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+
                 <div
-                  className="subscription"
-                  key={`${i}-${sub.merchant}-${sub.amount}`}
+                  className="results-categories"
+                  role="group"
+                  aria-label="Filter by subscription category"
                 >
-                  <div>
-                    <strong>{sub.merchant}</strong>
-                    <span className="subscription-meta">
-                      {sub.frequency} · {sub.occurrences} charges
-                    </span>
-                    {sub.service && (
-                      <a
-                        className="manage-link"
-                        href={sub.service.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                  {categoryOptions.map((opt) => {
+                    const active = selectedCategory === opt.category;
+                    return (
+                      <button
+                        key={opt.category}
+                        type="button"
+                        className={`filter-tab${active ? " is-active" : ""}`}
+                        aria-pressed={active}
+                        onClick={() => setSelectedCategory(opt.category)}
                       >
-                        <span>{sub.service.label}</span>
-                        <ArrowUpRight size={13} aria-hidden="true" />
-                      </a>
-                    )}
-                  </div>
-                  <div className="subscription-price">
-                    ₹
-                    {sub.monthlyEquivalent.toLocaleString("en-IN", {
+                        <span>{opt.category}</span>
+                        <span className="filter-tab-count">{opt.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {isFiltered && (
+                <div className="results-filter-summary" role="status" aria-live="polite">
+                  <span>
+                    Showing {filteredSubscriptions.length} of{" "}
+                    {result.subscriptions.length} charges · ₹
+                    {filteredMonthlyTotal.toLocaleString("en-IN", {
                       maximumFractionDigits: 2,
                     })}
-                    <small>/mo</small>
-                  </div>
+                    /mo
+                  </span>
+                  <button
+                    type="button"
+                    className="results-clear-btn"
+                    onClick={resetFilters}
+                  >
+                    Reset filters
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {filteredSubscriptions.length > 0 ? (
+                <div className="glass-panel subscription-list">
+                  {filteredSubscriptions.map((sub, i) => (
+                    <div
+                      className="subscription"
+                      key={`${i}-${sub.merchant}-${sub.amount}`}
+                    >
+                      <div>
+                        <strong>{sub.merchant}</strong>
+                        <span className="subscription-meta">
+                          {sub.frequency} · {sub.occurrences} charges ·{" "}
+                          {getSubscriptionCategory(sub)}
+                        </span>
+                        {sub.service && (
+                          <a
+                            className="manage-link"
+                            href={sub.service.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <span>{sub.service.label}</span>
+                            <ArrowUpRight size={13} aria-hidden="true" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="subscription-price">
+                        ₹
+                        {sub.monthlyEquivalent.toLocaleString("en-IN", {
+                          maximumFractionDigits: 2,
+                        })}
+                        <small>/mo</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="glass-panel empty-state results-no-match">
+                  <p>
+                    No subscriptions match
+                    {searchQuery.trim()
+                      ? ` "${searchQuery.trim()}"`
+                      : " this category"}
+                    {selectedCategory !== "All" && searchQuery.trim()
+                      ? ` in ${selectedCategory}`
+                      : ""}
+                    .
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={resetFilters}
+                  >
+                    Reset filters
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="glass-panel empty-state">
               No recurring charges were confidently detected. Try a CSV with
@@ -315,6 +598,13 @@ export default function Scanner({
           </div>
         </motion.div>
       )}
+
+      <SpendingTrendChart
+        scans={pastScans}
+        loading={historyLoading}
+        locked={locked}
+        onRequestScan={() => fileInputRef.current?.click()}
+      />
 
       {pastScans.length > 0 && (
         <div className="history">

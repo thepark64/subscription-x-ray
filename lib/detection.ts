@@ -1,4 +1,9 @@
-import { findKnownService, type KnownService } from "@/lib/services";
+import {
+  classifySubscriptionCategory,
+  findKnownService,
+  type KnownService,
+  type ServiceCategory,
+} from "@/lib/services";
 
 export type Frequency = "weekly" | "monthly" | "quarterly" | "annual";
 
@@ -8,7 +13,8 @@ export type Subscription = {
   frequency: Frequency;
   occurrences: number;
   monthlyEquivalent: number;
-  service?: Pick<KnownService, "name" | "url" | "label">;
+  category: ServiceCategory;
+  service?: Pick<KnownService, "name" | "url" | "label" | "category">;
 };
 
 export type ScanResult = {
@@ -331,6 +337,10 @@ export function analyzeCsv(csv: string): ScanResult {
     const avgAmount = amounts.reduce((a, b) => a + b, 0) / amounts.length;
     const latest = list[list.length - 1];
     const service = findKnownService(latest.merchant);
+    const category = classifySubscriptionCategory(
+      service ? service.name : latest.merchant,
+      service?.category
+    );
 
     subscriptions.push({
       merchant: service ? service.name : displayName(latest.merchant),
@@ -338,7 +348,15 @@ export function analyzeCsv(csv: string): ScanResult {
       frequency: best.cycle.frequency,
       occurrences: list.length,
       monthlyEquivalent: monthlyEquivalent(avgAmount, best.cycle.frequency),
-      service: service ? { name: service.name, url: service.url, label: service.label } : undefined,
+      category,
+      service: service
+        ? {
+            name: service.name,
+            url: service.url,
+            label: service.label,
+            category: service.category,
+          }
+        : undefined,
     });
   }
 

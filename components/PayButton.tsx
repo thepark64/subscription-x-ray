@@ -138,8 +138,21 @@ export default function PayButton({
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      const order = await res.json();
-      if (!res.ok) {
+      const raw = await res.text();
+      let order: {
+        error?: string;
+        orderId?: string;
+        paymentSessionId?: string;
+        mode?: string;
+      } = {};
+      try {
+        order = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(
+          `Payment endpoint returned HTML instead of JSON (HTTP ${res.status}). Deploy the updated /api/cashfree routes to your host.`
+        );
+      }
+      if (!res.ok || !order.paymentSessionId || !order.orderId) {
         throw new Error(order.error ?? "Could not start the payment.");
       }
 

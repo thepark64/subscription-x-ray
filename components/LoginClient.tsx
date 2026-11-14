@@ -121,11 +121,17 @@ export default function LoginClient() {
       router.push("/scanner");
       router.refresh();
     } catch (err) {
-      setError(
+      const msg =
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again."
-      );
+          : "Something went wrong. Please try again.";
+      if (msg.includes("is not valid JSON") || msg.includes("<!doctype")) {
+        setError(
+          "Authentication received an HTML page instead of JSON. Verify NEXT_PUBLIC_SUPABASE_URL is your API URL (https://<project-ref>.supabase.co) and redeploy."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,11 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { cashfreeHeaders, getCashfreeConfig } from "@/lib/cashfree";
-import { PACK_PRICE_RUPEES, PACK_SIZE } from "@/lib/config";
+import {
+  buildCashfreeOrderPayload,
+  cashfreeHeaders,
+  getCashfreeConfig,
+} from "@/lib/cashfree";
 
 export const runtime = "nodejs";
 
@@ -57,41 +60,49 @@ export async function POST(req: NextRequest) {
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     req.nextUrl.origin;
-  const cleanOrigin = origin.replace(/\/+$/, "");
+
+  const payload = buildCashfreeOrderPayload({
+    orderId,
+    userId: user.id,
+    email: user.email ?? undefined,
+    origin,
+  });
 
   const res = await fetch(`${cf.baseUrl}/orders`, {
     method: "POST",
     headers: cashfreeHeaders(cf.appId, cf.secretKey),
-    body: JSON.stringify({
-      order_id: orderId,
-      order_amount: PACK_PRICE_RUPEES,
-      order_currency: "INR",
-      customer_details: {
-        customer_id: user.id,
-        customer_email: user.email || undefined,
-        customer_phone: "9999999999",
-      },
-      order_meta: {
-        return_url: `${cleanOrigin}/scanner?cf_order_id={order_id}`,
-        notify_url: `${cleanOrigin}/api/cashfree/webhook`,
-      },
-      order_tags: {
-        user_id: user.id,
-        pack_size: String(PACK_SIZE),
-      },
-      order_note: `Subscription X-Ray ${PACK_SIZE}-scan pack`,
-    }),
+    body: JSON.stringify(payload),
   });
 
+  const rawText = await res.text();
   if (!res.ok) {
-    console.error("Cashfree order creation failed:", res.status, await res.text());
+    console.error(`Cashfree order creation failed (${cf.mode}):`, res.status, rawText);
     return NextResponse.json(
-      { error: "Could not start the payment. Please try again." },
+      {
+        error:
+          res.status === 401
+            ? `Cashfree authentication failed (${cf.mode} mode). Check CASHFREE_APP_ID and CASHFREE_SECRET_KEY.`
+            : "Could not start the payment. Please try again.",
+      },
       { status: 502 }
     );
   }
 
-  const order = await res.json();
+  let order: {
+    order_id?: string;
+    payment_session_id?: string;
+    order_amount?: number;
+    order_currency?: string;
+  };
+  try {
+    order = JSON.parse(rawText);
+  } catch {
+    console.error("Cashfree returned non-JSON:", rawText.slice(0, 200));
+    return NextResponse.json(
+      { error: "Unexpected response from payment gateway." },
+      { status: 502 }
+    );
+  }
   if (!order?.payment_session_id) {
     console.error("Cashfree order missing payment_session_id:", order);
     return NextResponse.json(
