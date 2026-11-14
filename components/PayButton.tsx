@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { PACK_PRICE_LABEL, PACK_SIZE, SUPPORT_EMAIL } from "@/lib/config";
 
@@ -21,17 +22,12 @@ function loadCheckoutScript(): Promise<boolean> {
   });
 }
 
-/**
- * Opens Razorpay Checkout for one scan pack. Credits are only ever granted by
- * the webhook — this component never trusts the browser-side success callback
- * — so after payment it simply waits for the new balance to appear.
- */
 export default function PayButton({
   currentCredits,
   onCreditsChanged,
 }: {
   currentCredits: number;
-  onCreditsChanged: () => Promise<number>; // refetches balance, returns it
+  onCreditsChanged: () => Promise<number>;
 }) {
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -63,18 +59,24 @@ export default function PayButton({
     setError("");
     setBusy(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in first.");
 
       const ok = await loadCheckoutScript();
-      if (!ok || !window.Razorpay) throw new Error("Could not load the payment window. Check your connection.");
+      if (!ok || !window.Razorpay)
+        throw new Error(
+          "Could not load the payment window. Check your connection."
+        );
 
       const res = await fetch("/api/razorpay/order", {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const order = await res.json();
-      if (!res.ok) throw new Error(order.error ?? "Could not start the payment.");
+      if (!res.ok)
+        throw new Error(order.error ?? "Could not start the payment.");
 
       const checkout = new window.Razorpay({
         key: order.keyId,
@@ -84,7 +86,7 @@ export default function PayButton({
         name: "Subscription X-Ray",
         description: `${PACK_SIZE} statement scans`,
         prefill: { email: order.email },
-        theme: { color: "#233247" },
+        theme: { color: "#1d4ed8" },
         handler: () => {
           void waitForCredits();
         },
@@ -99,10 +101,27 @@ export default function PayButton({
 
   return (
     <div>
-      <button className="btn btn-primary" onClick={pay} disabled={busy || waiting}>
-        {waiting ? "Confirming payment…" : busy ? "Opening payment…" : `Pay ${PACK_PRICE_LABEL} for ${PACK_SIZE} scans`}
+      <button
+        className="btn btn-primary"
+        onClick={pay}
+        disabled={busy || waiting}
+      >
+        {waiting
+          ? "Confirming payment…"
+          : busy
+            ? "Opening payment…"
+            : `Pay ${PACK_PRICE_LABEL} for ${PACK_SIZE} scans`}
       </button>
-      {error && <div className="error-box" style={{ marginTop: 12 }}>{error}</div>}
+      {error && (
+        <div className="error-box" role="alert">
+          <AlertCircle
+            size={16}
+            style={{ flexShrink: 0, marginTop: 2 }}
+            aria-hidden="true"
+          />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }

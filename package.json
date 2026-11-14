@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "lucide-react": "^1.73.0",
+    "motion": "^14.14.0",
     "next": "15.5.28",
     "react": "19.1.0",
     "react-dom": "19.1.0"

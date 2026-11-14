@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import Scanner from "@/components/Scanner";
 import PayButton from "@/components/PayButton";
@@ -16,10 +17,12 @@ export default function ScannerPage() {
   const [userId, setUserId] = useState("");
   const [credits, setCredits] = useState(0);
 
-  // Re-reads the balance. A read ERROR is not treated as "zero credits" — that
-  // used to send paying users back to the payment screen on a network blip.
   const refreshCredits = useCallback(async (id: string): Promise<number> => {
-    const { data, error } = await supabase.from("profiles").select("scan_credits").eq("id", id).maybeSingle();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("scan_credits")
+      .eq("id", id)
+      .maybeSingle();
     if (error) throw error;
     const remaining = data?.scan_credits ?? 0;
     setCredits(remaining);
@@ -28,7 +31,9 @@ export default function ScannerPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         setGate("needs-login");
         return;
@@ -45,23 +50,38 @@ export default function ScannerPage() {
   }, [refreshCredits]);
 
   async function spendCredit(): Promise<boolean> {
-    const { data: remaining, error } = await supabase.rpc("consume_scan_credit");
+    const { data: remaining, error } = await supabase.rpc(
+      "consume_scan_credit"
+    );
     if (error) return false;
     setCredits(remaining);
     return true;
   }
 
   if (gate === "checking") {
-    return <main className="scanner-page"><div className="wrap"><p className="lede">Checking your account…</p></div></main>;
+    return (
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <p className="lede" style={{ marginBottom: 0 }}>
+            Checking your account…
+          </p>
+        </div>
+      </main>
+    );
   }
 
   if (gate === "error") {
     return (
-      <main className="scanner-page">
-        <div className="wrap gate-card">
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
           <h1>Couldn&apos;t load your account</h1>
           <p className="lede">Check your connection and try again.</p>
-          <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
         </div>
       </main>
     );
@@ -69,11 +89,20 @@ export default function ScannerPage() {
 
   if (gate === "needs-login") {
     return (
-      <main className="scanner-page">
-        <div className="wrap gate-card">
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Subscription X-Ray</span>
+          </Link>
           <h1>Sign in to scan your statements</h1>
-          <p className="lede">{PACK_PRICE_LABEL} unlocks {PACK_SIZE} scans on your account — sign in or create an account to continue.</p>
-          <a className="btn btn-primary" href="/login">Sign in / create account</a>
+          <p className="lede">
+            {PACK_PRICE_LABEL} unlocks {PACK_SIZE} scans on your account — sign
+            in or create an account to continue.
+          </p>
+          <Link className="btn btn-primary" href="/login">
+            Sign in / create account
+          </Link>
         </div>
       </main>
     );
@@ -84,11 +113,18 @@ export default function ScannerPage() {
   return (
     <main className="scanner-page">
       <div className="wrap">
-        <div className="scanner-top">
-          <Link href="/" className="back">← Subscription X-Ray</Link>
+        <div className="glass-panel scanner-top">
+          <Link href="/" className="back">
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Subscription X-Ray</span>
+          </Link>
           <div className="scanner-account">
-            <span className="privacy-pill">
-              🔒 {credits} {credits === 1 ? "scan" : "scans"} left{email ? ` · ${email}` : ""}
+            <span className="account-meta">
+              <Lock size={14} aria-hidden="true" />
+              <strong>
+                {credits} {credits === 1 ? "scan" : "scans"} left
+              </strong>
+              {email ? ` · ${email}` : ""}
             </span>
             <AccountActions />
           </div>
@@ -100,9 +136,13 @@ export default function ScannerPage() {
           paywall={
             <>
               <p>
-                {PACK_SIZE} scans for {PACK_PRICE_LABEL}, one-time. Nothing repeats automatically.
+                {PACK_SIZE} scans for {PACK_PRICE_LABEL}, one-time. Nothing
+                repeats automatically.
               </p>
-              <PayButton currentCredits={credits} onCreditsChanged={() => refreshCredits(userId)} />
+              <PayButton
+                currentCredits={credits}
+                onCreditsChanged={() => refreshCredits(userId)}
+              />
             </>
           }
         />

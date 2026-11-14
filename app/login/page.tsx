@@ -1,8 +1,10 @@
-
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -25,7 +27,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // FORGOT PASSWORD
       if (mode === "forgot") {
         const { error: resetError } =
           await supabase.auth.resetPasswordForEmail(email, {
@@ -41,62 +42,51 @@ export default function LoginPage() {
         return;
       }
 
-      // SIGN UP
       if (mode === "signup") {
-        const { data, error: authError } =
-          await supabase.auth.signUp({
-            email: email.trim(),
-            password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/login`,
-            },
-          });
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
+        });
 
         if (authError) {
           setError(authError.message);
           return;
         }
 
-        // Email confirmation required
         if (!data.session) {
           setNotice(
             "Account created successfully! Check your inbox and click the confirmation link before signing in."
           );
-
           setMode("signin");
           return;
         }
 
-        // Email confirmation disabled
         router.push("/scanner");
         router.refresh();
         return;
       }
 
-      // SIGN IN
-      const { error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
       if (authError) {
-        if (
-          authError.message.toLowerCase().includes("email not confirmed")
-        ) {
+        if (authError.message.toLowerCase().includes("email not confirmed")) {
           setError(
             "Your email is not confirmed yet. Please check your inbox and click the confirmation link."
           );
         } else {
           setError(authError.message);
         }
-
         return;
       }
 
       router.push("/scanner");
       router.refresh();
-
     } catch (err) {
       setError(
         err instanceof Error
@@ -116,10 +106,16 @@ export default function LoginPage() {
 
   return (
     <main className="auth-page">
-      <div className="wrap auth-wrap">
-        <a href="/" className="back">
-          ← Subscription X-Ray
-        </a>
+      <motion.div
+        className="glass-panel auth-card"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Link href="/" className="back">
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Subscription X-Ray</span>
+        </Link>
 
         <h1>
           {mode === "signup" && "Create your account"}
@@ -128,19 +124,14 @@ export default function LoginPage() {
         </h1>
 
         <p className="lede">
-          {mode === "signup" &&
-            "One payment unlocks 12 scans on your account."}
-
+          {mode === "signup" && "One payment unlocks 12 scans on your account."}
           {mode === "signin" && "Welcome back."}
-
-          {mode === "forgot" &&
-            "Enter your email and we'll send a reset link."}
+          {mode === "forgot" && "Enter your email and we'll send a reset link."}
         </p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="field">
             <label htmlFor="email">Email</label>
-
             <input
               id="email"
               type="email"
@@ -155,14 +146,11 @@ export default function LoginPage() {
           {mode !== "forgot" && (
             <div className="field">
               <label htmlFor="password">Password</label>
-
               <input
                 id="password"
                 type="password"
                 autoComplete={
-                  mode === "signup"
-                    ? "new-password"
-                    : "current-password"
+                  mode === "signup" ? "new-password" : "current-password"
                 }
                 required
                 minLength={6}
@@ -175,7 +163,8 @@ export default function LoginPage() {
 
           {error && (
             <div className="error-box" role="alert">
-              {error}
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -186,10 +175,9 @@ export default function LoginPage() {
           )}
 
           <button
-            className="btn btn-primary"
+            className="btn btn-primary full"
             type="submit"
             disabled={loading}
-            style={{ width: "100%" }}
           >
             {loading
               ? "Please wait…"
@@ -235,7 +223,7 @@ export default function LoginPage() {
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

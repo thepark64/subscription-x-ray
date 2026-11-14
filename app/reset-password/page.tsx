@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 type LinkStatus = "checking" | "valid" | "invalid";
@@ -16,12 +18,6 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Supabase fires PASSWORD_RECOVERY once it reads the token from the
-    // emailed link's URL. If that never fires, the link was invalid,
-    // expired, or the redirect URL isn't whitelisted in Supabase's
-    // dashboard (Authentication -> URL Configuration -> Redirect URLs) —
-    // in every one of those cases, this shows a clear message instead of
-    // leaving a form the user can submit into a silent failure.
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setLinkStatus("valid");
     });
@@ -46,14 +42,17 @@ export default function ResetPasswordPage() {
     setLoading(true);
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (updateError) { setError(updateError.message); return; }
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     setDone(true);
   }
 
   if (linkStatus === "checking") {
     return (
       <main className="auth-page">
-        <div className="wrap auth-wrap">
+        <div className="glass-panel auth-card">
           <p className="lede">Checking your reset link…</p>
         </div>
       </main>
@@ -63,13 +62,16 @@ export default function ResetPasswordPage() {
   if (linkStatus === "invalid") {
     return (
       <main className="auth-page">
-        <div className="wrap auth-wrap">
+        <div className="glass-panel auth-card">
           <h1>This link didn&apos;t work</h1>
-          <p className="lede">
-            It may have expired (reset links are time-limited) or already been used.
-            Request a fresh one from the sign-in page.
+          <p className="lede" style={{ marginBottom: 24 }}>
+            It may have expired (reset links are time-limited) or already been
+            used. Request a fresh one from the sign-in page.
           </p>
-          <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => router.push("/login")}>
+          <button
+            className="btn btn-primary full"
+            onClick={() => router.push("/login")}
+          >
             Back to sign in
           </button>
         </div>
@@ -80,10 +82,15 @@ export default function ResetPasswordPage() {
   if (done) {
     return (
       <main className="auth-page">
-        <div className="wrap auth-wrap">
+        <div className="glass-panel auth-card">
           <h1>Password updated</h1>
-          <p className="lede">You can now sign in with your new password.</p>
-          <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => router.push("/login")}>
+          <p className="lede" style={{ marginBottom: 24 }}>
+            You can now sign in with your new password.
+          </p>
+          <button
+            className="btn btn-primary full"
+            onClick={() => router.push("/login")}
+          >
             Go to sign in
           </button>
         </div>
@@ -93,21 +100,45 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="auth-page">
-      <div className="wrap auth-wrap">
-        <Link href="/" className="back">← Subscription X-Ray</Link>
+      <motion.div
+        className="glass-panel auth-card"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Link href="/" className="back">
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Subscription X-Ray</span>
+        </Link>
         <h1>Set a new password</h1>
         <p className="lede">Choose a new password for your account.</p>
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="field">
-            <label>New password</label>
-            <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <label htmlFor="new-password">New password</label>
+            <input
+              id="new-password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          {error && <div className="error-box">{error}</div>}
-          <button className="btn btn-primary full" type="submit" disabled={loading}>
+          {error && (
+            <div className="error-box" role="alert">
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          )}
+          <button
+            className="btn btn-primary full"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Please wait…" : "Update password"}
           </button>
         </form>
-      </div>
+      </motion.div>
     </main>
   );
 }

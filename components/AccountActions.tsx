@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { SUPPORT_EMAIL } from "@/lib/config";
 
@@ -25,7 +26,9 @@ export default function AccountActions() {
 
     setBusy(true);
     setMessage("");
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       setBusy(false);
       router.replace("/login");
@@ -50,9 +53,29 @@ export default function AccountActions() {
 
   return (
     <div className="account-actions">
-      {message && <span className="small-note" role="alert">{message}</span>}
-      <button className="link-btn" type="button" onClick={signOut} disabled={busy}>Sign out</button>
-      <button className="link-btn danger-link" type="button" onClick={deleteAccount} disabled={busy}>Delete account</button>
+      {message && (
+        <span className="small-note" role="alert">
+          {message}
+        </span>
+      )}
+      <button
+        className="link-btn"
+        type="button"
+        onClick={signOut}
+        disabled={busy}
+      >
+        <LogOut size={14} aria-hidden="true" />
+        <span>Sign out</span>
+      </button>
+      <button
+        className="link-btn danger-link"
+        type="button"
+        onClick={deleteAccount}
+        disabled={busy}
+      >
+        <Trash2 size={14} aria-hidden="true" />
+        <span>Delete account</span>
+      </button>
     </div>
   );
 }
