@@ -56,8 +56,8 @@ export default function TermsPage() {
               Each successful payment adds a fixed number of scan credits to
               your account, as stated on the pricing page at the time of
               purchase. Credits do not expire and are not transferable between
-              accounts. Payments are processed by Razorpay; we do not store your
-              card or UPI details.
+              accounts. Payments are processed by Cashfree Payments; we do not
+              store your card or UPI details.
             </p>
           </section>
 

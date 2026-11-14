@@ -53,8 +53,8 @@ export default function PrivacyPage() {
                 original statement
               </li>
               <li>
-                Payment records (amount, Razorpay payment ID, timestamp) — not
-                your card or UPI details, which Razorpay handles directly
+                Payment records (amount, payment ID, timestamp) — not your card
+                or UPI details, which Cashfree Payments handles directly
               </li>
               <li>Your remaining scan credit balance</li>
             </ul>
@@ -72,8 +72,8 @@ export default function PrivacyPage() {
             <h2>4. Third parties</h2>
             <p>
               We use Supabase for authentication and database hosting, and
-              Razorpay for payment processing. Each has its own privacy policy
-              governing data they process on our behalf.
+              Cashfree Payments for payment processing. Each has its own privacy
+              policy governing data they process on our behalf.
             </p>
           </section>
 

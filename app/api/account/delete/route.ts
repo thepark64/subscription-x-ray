@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 
 export async function DELETE(req: NextRequest) {
-  const token = req.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
 
   const admin = getSupabaseAdmin();

@@ -5,17 +5,30 @@ import { AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { PACK_PRICE_LABEL, PACK_SIZE, SUPPORT_EMAIL } from "@/lib/config";
 
+type CashfreeCheckoutResult = {
+  error?: { message?: string };
+  redirect?: boolean;
+  paymentDetails?: { paymentMessage?: string };
+};
+
+type CashfreeInstance = {
+  checkout: (options: {
+    paymentSessionId: string;
+    redirectTarget?: "_modal" | "_self" | "_blank" | "_top";
+  }) => Promise<CashfreeCheckoutResult>;
+};
+
 declare global {
   interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+    Cashfree?: (options: { mode: "sandbox" | "production" }) => CashfreeInstance;
   }
 }
 
-function loadCheckoutScript(): Promise<boolean> {
+function loadCashfreeScript(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
+    if (window.Cashfree) return resolve(true);
     const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
@@ -33,11 +46,25 @@ export default function PayButton({
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState("");
 
-  async function waitForCredits() {
+  async function waitForCredits(accessToken: string, orderId: string) {
     setWaiting(true);
     try {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 15; i++) {
         await new Promise((r) => setTimeout(r, 2000));
+        const verifyRes = await fetch("/api/cashfree/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ orderId }),
+        });
+        if (verifyRes.ok) {
+          await onCreditsChanged();
+          setWaiting(false);
+          setBusy(false);
+          return;
+        }
         const latest = await onCreditsChanged();
         if (latest > currentCredits) {
           setWaiting(false);
@@ -46,13 +73,49 @@ export default function PayButton({
         }
       }
     } catch {
-      // Keep the customer informed; the webhook may still complete successfully.
+      // Keep the customer informed; webhook may still complete asynchronously.
     }
     setWaiting(false);
     setBusy(false);
     setError(
-      `Your payment went through but credits haven't appeared yet. Refresh in a minute, or email ${SUPPORT_EMAIL} with your payment ID.`
+      `Your payment is taking a moment to confirm. Refresh in a minute, or email ${SUPPORT_EMAIL} with order ID ${orderId}.`
     );
+  }
+
+  async function verifyOrder(accessToken: string, orderId: string) {
+    setWaiting(true);
+    try {
+      const verifyRes = await fetch("/api/cashfree/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ orderId }),
+      });
+
+      if (verifyRes.ok) {
+        await onCreditsChanged();
+        setWaiting(false);
+        setBusy(false);
+        return;
+      }
+
+      if (verifyRes.status === 202) {
+        await waitForCredits(accessToken, orderId);
+        return;
+      }
+
+      const payload = await verifyRes.json().catch(() => ({}));
+      setError(
+        payload.error ||
+          `Could not verify payment automatically. Email ${SUPPORT_EMAIL} with order ID ${orderId}.`
+      );
+      setWaiting(false);
+      setBusy(false);
+    } catch {
+      await waitForCredits(accessToken, orderId);
+    }
   }
 
   async function pay() {
@@ -64,35 +127,46 @@ export default function PayButton({
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in first.");
 
-      const ok = await loadCheckoutScript();
-      if (!ok || !window.Razorpay)
+      const ok = await loadCashfreeScript();
+      if (!ok || !window.Cashfree) {
         throw new Error(
-          "Could not load the payment window. Check your connection."
+          "Could not load the Cashfree checkout window. Check your connection."
         );
+      }
 
-      const res = await fetch("/api/razorpay/order", {
+      const res = await fetch("/api/cashfree/order", {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const order = await res.json();
-      if (!res.ok)
+      if (!res.ok) {
         throw new Error(order.error ?? "Could not start the payment.");
+      }
 
-      const checkout = new window.Razorpay({
-        key: order.keyId,
-        order_id: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Subscription X-Ray",
-        description: `${PACK_SIZE} statement scans`,
-        prefill: { email: order.email },
-        theme: { color: "#1d4ed8" },
-        handler: () => {
-          void waitForCredits();
-        },
-        modal: { ondismiss: () => setBusy(false) },
+      const cashfree = window.Cashfree({
+        mode: order.mode === "production" ? "production" : "sandbox",
       });
-      checkout.open();
+
+      const result = await cashfree.checkout({
+        paymentSessionId: order.paymentSessionId,
+        redirectTarget: "_modal",
+      });
+
+      if (result.error) {
+        setError(
+          result.error.message ||
+            "Payment was cancelled or could not be completed."
+        );
+        setBusy(false);
+        return;
+      }
+
+      if (result.redirect) {
+        // Redirect flows return to /scanner?cf_order_id=...
+        return;
+      }
+
+      await verifyOrder(session.access_token, order.orderId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setBusy(false);
@@ -109,7 +183,7 @@ export default function PayButton({
         {waiting
           ? "Confirming payment…"
           : busy
-            ? "Opening payment…"
+            ? "Opening Cashfree…"
             : `Pay ${PACK_PRICE_LABEL} for ${PACK_SIZE} scans`}
       </button>
       {error && (

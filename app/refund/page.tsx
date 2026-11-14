@@ -27,9 +27,9 @@ export default function RefundPage() {
 
           <div className="legal-disclaimer">
             This is a starting draft. Decide your actual refund window and
-            conditions, then have this reviewed before going live — Razorpay
-            requires a clear refund policy to be publicly visible before
-            approving a merchant account.
+            conditions, then have this reviewed before going live — payment
+            gateways require a clear refund policy to be publicly visible
+            before approving a merchant account.
           </div>
 
           <section>
@@ -60,8 +60,9 @@ export default function RefundPage() {
             <h2>How to request one</h2>
             <p>
               Email support@subscriptionxray.jo3.org with your account email and
-              the Razorpay payment ID. Valid refund requests are processed
-              within 5-7 business days back to the original payment method.
+              the Cashfree payment or order ID. Valid refund requests are
+              processed within 5-7 business days back to the original payment
+              method.
             </p>
           </section>
         </div>

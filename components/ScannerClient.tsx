@@ -1,0 +1,233 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, ArrowLeft, Lock } from "lucide-react";
+import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
+import Scanner from "@/components/Scanner";
+import PayButton from "@/components/PayButton";
+import AccountActions from "@/components/AccountActions";
+import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
+
+type Gate =
+  | "checking"
+  | "not-configured"
+  | "needs-login"
+  | "ready"
+  | "error";
+
+export default function ScannerClient() {
+  const [gate, setGate] = useState<Gate>(
+    supabaseConfigured ? "checking" : "not-configured"
+  );
+  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
+  const [credits, setCredits] = useState(0);
+  const [paymentNotice, setPaymentNotice] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+
+  const refreshCredits = useCallback(async (id: string): Promise<number> => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("scan_credits")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    const remaining = data?.scan_credits ?? 0;
+    setCredits(remaining);
+    return remaining;
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setGate("needs-login");
+        return;
+      }
+      setEmail(session.user.email ?? "");
+      setUserId(session.user.id);
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const cfOrderId = params.get("cf_order_id");
+        if (cfOrderId) {
+          const verifyRes = await fetch("/api/cashfree/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ orderId: cfOrderId }),
+          });
+          if (verifyRes.ok) {
+            setPaymentNotice(
+              `Payment confirmed — ${PACK_SIZE} scan credits added to your account.`
+            );
+          } else if (verifyRes.status === 202) {
+            setPaymentError(
+              "Your payment is still confirming. Please refresh in a few moments."
+            );
+          } else {
+            const payload = await verifyRes.json().catch(() => ({}));
+            setPaymentError(
+              payload.error || "Could not confirm your payment automatically."
+            );
+          }
+          window.history.replaceState({}, "", "/scanner");
+        }
+
+        await refreshCredits(session.user.id);
+        setGate("ready");
+      } catch {
+        setGate("error");
+      }
+    })();
+  }, [refreshCredits]);
+
+  async function spendCredit(): Promise<boolean> {
+    const { data: remaining, error } = await supabase.rpc(
+      "consume_scan_credit"
+    );
+    if (error) return false;
+    setCredits(remaining);
+    return true;
+  }
+
+  if (gate === "checking") {
+    return (
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <p className="lede" style={{ marginBottom: 0 }}>
+            Checking your account…
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (gate === "not-configured") {
+    return (
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Subscription X-Ray</span>
+          </Link>
+          <h1>Connect Supabase to enable accounts</h1>
+          <p className="lede">
+            Add <code>NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
+            <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, and{" "}
+            <code>SUPABASE_SERVICE_ROLE_KEY</code> to <code>.env.local</code>,
+            then run <code>supabase/schema.sql</code> in your Supabase SQL
+            Editor.
+          </p>
+          <Link className="btn btn-primary" href="/">
+            Back to home
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (gate === "error") {
+    return (
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <h1>Couldn&apos;t load your account</h1>
+          <p className="lede">
+            Check your connection and ensure <code>supabase/schema.sql</code>{" "}
+            has been applied in Supabase.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (gate === "needs-login") {
+    return (
+      <main className="gate-wrap">
+        <div className="glass-panel gate-card">
+          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Subscription X-Ray</span>
+          </Link>
+          <h1>Sign in to scan your statements</h1>
+          <p className="lede">
+            {PACK_PRICE_LABEL} unlocks {PACK_SIZE} scans on your account — sign
+            in or create an account to continue.
+          </p>
+          <Link className="btn btn-primary" href="/login">
+            Sign in / create account
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const locked = credits <= 0;
+
+  return (
+    <main className="scanner-page">
+      <div className="wrap">
+        <div className="glass-panel scanner-top">
+          <Link href="/" className="back">
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Subscription X-Ray</span>
+          </Link>
+          <div className="scanner-account">
+            <span className="account-meta">
+              <Lock size={14} aria-hidden="true" />
+              <strong>
+                {credits} {credits === 1 ? "scan" : "scans"} left
+              </strong>
+              {email ? ` · ${email}` : ""}
+            </span>
+            <AccountActions />
+          </div>
+        </div>
+        {paymentNotice && (
+          <div className="notice-box" style={{ marginBottom: 20 }} role="status">
+            {paymentNotice}
+          </div>
+        )}
+        {paymentError && (
+          <div className="error-box" style={{ marginBottom: 20 }} role="alert">
+            <AlertCircle
+              size={16}
+              style={{ flexShrink: 0, marginTop: 2 }}
+              aria-hidden="true"
+            />
+            <span>{paymentError}</span>
+          </div>
+        )}
+        <Scanner
+          userId={userId}
+          locked={locked}
+          spendCredit={spendCredit}
+          paywall={
+            <>
+              <p>
+                {PACK_SIZE} scans for {PACK_PRICE_LABEL}, one-time. Nothing
+                repeats automatically.
+              </p>
+              <PayButton
+                currentCredits={credits}
+                onCreditsChanged={() => refreshCredits(userId)}
+              />
+            </>
+          }
+        />
+      </div>
+    </main>
+  );
+}
