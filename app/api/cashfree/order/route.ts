@@ -61,10 +61,16 @@ export async function POST(req: NextRequest) {
     process.env.NEXT_PUBLIC_SITE_URL ||
     req.nextUrl.origin;
 
+  const fullName =
+    typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : undefined;
+
   const payload = buildCashfreeOrderPayload({
     orderId,
     userId: user.id,
     email: user.email ?? undefined,
+    customerName: fullName,
     origin,
   });
 

@@ -11,6 +11,7 @@ export type CashfreeOrderPayload = {
   order_currency: "INR";
   customer_details: {
     customer_id: string;
+    customer_name?: string;
     customer_email?: string;
     customer_phone: string;
   };
@@ -67,15 +68,18 @@ export function buildCashfreeOrderPayload(params: {
   orderId: string;
   userId: string;
   email?: string;
+  customerName?: string;
   origin: string;
 }): CashfreeOrderPayload {
   const cleanOrigin = params.origin.replace(/\/+$/, "");
+  const cleanName = params.customerName?.trim();
   return {
     order_id: params.orderId,
     order_amount: PACK_PRICE_RUPEES,
     order_currency: "INR",
     customer_details: {
       customer_id: params.userId,
+      ...(cleanName ? { customer_name: cleanName } : {}),
       ...(params.email ? { customer_email: params.email } : {}),
       customer_phone: "9999999999",
     },

@@ -12,6 +12,7 @@ type Mode = "signin" | "signup" | "forgot";
 export default function LoginClient() {
   const router = useRouter();
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<Mode>("signup");
@@ -76,11 +77,13 @@ export default function LoginClient() {
       }
 
       if (mode === "signup") {
+        const cleanName = fullName.trim().slice(0, 80);
         const { data, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/login`,
+            ...(cleanName ? { data: { full_name: cleanName } } : {}),
           },
         });
 
@@ -185,6 +188,22 @@ export default function LoginClient() {
         )}
 
         <form onSubmit={handleSubmit} className="auth-form">
+          {mode === "signup" && (
+            <div className="field">
+              <label htmlFor="full-name">Full name</label>
+              <input
+                id="full-name"
+                type="text"
+                autoComplete="name"
+                maxLength={80}
+                placeholder="e.g. Rayyan Khan"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={loading || !supabaseConfigured}
+              />
+            </div>
+          )}
+
           <div className="field">
             <label htmlFor="email">Email</label>
             <input

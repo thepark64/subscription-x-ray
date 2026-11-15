@@ -5,6 +5,7 @@
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
+  full_name text,
   scan_credits integer not null default 0 check (scan_credits >= 0),
   created_at timestamptz not null default now()
 );
@@ -13,6 +14,7 @@ create table if not exists scans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
   scanned_at timestamptz not null default now(),
+  statement_name text,
   subscription_count integer not null default 0,
   monthly_total numeric(12,2) not null default 0,
   annual_total numeric(12,2) not null default 0
@@ -40,6 +42,8 @@ create table if not exists payments (
 );
 
 -- Older installs may be missing these; harmless if already present.
+alter table profiles add column if not exists full_name text;
+alter table scans add column if not exists statement_name text;
 alter table payments add column if not exists razorpay_order_id text;
 alter table profiles drop constraint if exists profiles_scan_credits_check;
 alter table profiles add constraint profiles_scan_credits_check check (scan_credits >= 0);
@@ -73,9 +77,12 @@ create policy "read own scans" on scans for select using (auth.uid() = user_id);
 create policy "read own detected subscriptions" on detected_subscriptions for select using (auth.uid() = user_id);
 create policy "read own payments" on payments for select using (auth.uid() = user_id);
 
--- A signed-in user may save their OWN scan results (WITH CHECK blocks writing
--- under someone else's user_id).
+-- A signed-in user may save, rename, or delete their OWN scan results.
+drop policy if exists "update own scans" on scans;
+drop policy if exists "delete own scans" on scans;
 create policy "insert own scans" on scans for insert with check (auth.uid() = user_id);
+create policy "update own scans" on scans for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "delete own scans" on scans for delete using (auth.uid() = user_id);
 create policy "insert own detected subscriptions" on detected_subscriptions
   for insert with check (
     auth.uid() = user_id
@@ -91,8 +98,13 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, scan_credits)
-  values (new.id, lower(new.email), 0)
+  insert into public.profiles (id, email, full_name, scan_credits)
+  values (
+    new.id,
+    lower(new.email),
+    nullif(trim(coalesce(new.raw_user_meta_data->>'full_name', '')), ''),
+    0
+  )
   on conflict (id) do nothing;
   return new;
 end;
@@ -104,9 +116,35 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- Backfill profiles for anyone who signed up before the trigger existed.
-insert into public.profiles (id, email, scan_credits)
-select u.id, lower(u.email), 0 from auth.users u
+insert into public.profiles (id, email, full_name, scan_credits)
+select
+  u.id,
+  lower(u.email),
+  nullif(trim(coalesce(u.raw_user_meta_data->>'full_name', '')), ''),
+  0
+from auth.users u
 on conflict (id) do nothing;
+
+-- Lets a signed-in user update only their display name without touching scan_credits.
+create or replace function public.update_profile_name(p_full_name text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cleaned text;
+begin
+  cleaned := nullif(left(trim(coalesce(p_full_name, '')), 80), '');
+  update profiles
+  set full_name = cleaned
+  where id = auth.uid();
+  return cleaned;
+end;
+$$;
+
+revoke all on function public.update_profile_name(text) from public, anon;
+grant execute on function public.update_profile_name(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Credit functions

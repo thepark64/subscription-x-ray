@@ -723,6 +723,89 @@ footer {
   color: var(--warn);
 }
 
+.name-edit-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.name-edit-form input,
+.history-rename-form input {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-bg-subtle);
+  color: var(--ink);
+  font-size: 13.5px;
+  min-width: 160px;
+}
+
+.name-edit-form input:focus,
+.history-rename-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--glass-bg-strong);
+}
+
+.icon-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+
+.icon-action-btn:hover:not(:disabled) {
+  background: var(--glass-bg-subtle);
+  border-color: var(--glass-divider);
+  color: var(--ink);
+}
+
+.icon-action-btn.is-danger:hover:not(:disabled) {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
+}
+
+.icon-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statement-name-input {
+  width: 100%;
+  max-width: 340px;
+  min-height: 42px;
+  padding: 8px 14px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-bg-subtle);
+  color: var(--ink);
+  font-size: 14px;
+  text-align: center;
+  transition: border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.statement-name-input::placeholder {
+  color: var(--subtle);
+}
+
+.statement-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--glass-bg-strong);
+}
+
 .scanner-header {
   display: flex;
   justify-content: space-between;
@@ -930,6 +1013,15 @@ footer {
 
 .result-heading {
   margin: 34px 0 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.result-heading h2 {
+  margin: 4px 0 0;
 }
 
 .results-toolbar {
@@ -1182,6 +1274,14 @@ footer {
   overflow: hidden;
 }
 
+.history-item {
+  border-bottom: 1px solid var(--glass-divider);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
 .history-row {
   display: flex;
   justify-content: space-between;
@@ -1189,17 +1289,96 @@ footer {
   gap: 16px;
   padding: 14px 24px;
   font-size: 14px;
-  border-bottom: 1px solid var(--glass-divider);
   font-variant-numeric: tabular-nums;
+  flex-wrap: wrap;
 }
 
-.history-row:last-child {
-  border-bottom: none;
+.history-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.history-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.history-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.history-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.history-rename-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .history-amount {
   font-family: var(--font-mono), monospace;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.history-details {
+  padding: 12px 24px 16px;
+  background: var(--glass-bg-subtle);
+  border-top: 1px solid var(--glass-divider);
+}
+
+.history-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-detail-row strong {
+  display: block;
   font-weight: 500;
+  color: var(--ink);
+}
+
+.history-detail-meta {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.history-detail-amount {
+  font-family: var(--font-mono), monospace;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.history-detail-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 /* 6-Month Spending Trend Chart */

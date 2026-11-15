@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, Lock } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Lock, Pencil, X } from "lucide-react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
+import { isMissingColumnError, normalizeStatementName } from "@/lib/scanHistory";
 import Scanner from "@/components/Scanner";
 import PayButton from "@/components/PayButton";
 import AccountActions from "@/components/AccountActions";
@@ -21,22 +22,48 @@ export default function ScannerClient() {
     supabaseConfigured ? "checking" : "not-configured"
   );
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const [userId, setUserId] = useState("");
   const [credits, setCredits] = useState(0);
   const [paymentNotice, setPaymentNotice] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
-  const refreshCredits = useCallback(async (id: string): Promise<number> => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("scan_credits")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) throw error;
-    const remaining = data?.scan_credits ?? 0;
-    setCredits(remaining);
-    return remaining;
-  }, []);
+  const refreshProfile = useCallback(
+    async (id: string, fallbackName = ""): Promise<number> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("scan_credits, full_name")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error && isMissingColumnError(error, "full_name")) {
+        const legacy = await supabase
+          .from("profiles")
+          .select("scan_credits")
+          .eq("id", id)
+          .maybeSingle();
+        if (legacy.error) throw legacy.error;
+        const remaining = legacy.data?.scan_credits ?? 0;
+        setCredits(remaining);
+        setFullName(fallbackName);
+        return remaining;
+      }
+
+      if (error) throw error;
+      const remaining = data?.scan_credits ?? 0;
+      setCredits(remaining);
+      setFullName(
+        typeof data?.full_name === "string" && data.full_name.trim()
+          ? data.full_name.trim()
+          : fallbackName
+      );
+      return remaining;
+    },
+    []
+  );
 
   useEffect(() => {
     if (!supabaseConfigured) return;
@@ -49,6 +76,10 @@ export default function ScannerClient() {
         setGate("needs-login");
         return;
       }
+      const metaName =
+        typeof session.user.user_metadata?.full_name === "string"
+          ? session.user.user_metadata.full_name.trim()
+          : "";
       setEmail(session.user.email ?? "");
       setUserId(session.user.id);
       try {
@@ -80,13 +111,31 @@ export default function ScannerClient() {
           window.history.replaceState({}, "", "/scanner");
         }
 
-        await refreshCredits(session.user.id);
+        await refreshProfile(session.user.id, metaName);
         setGate("ready");
       } catch {
         setGate("error");
       }
     })();
-  }, [refreshCredits]);
+  }, [refreshProfile]);
+
+  async function saveProfileName(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const cleaned = normalizeStatementName(nameDraft);
+    setSavingName(true);
+    try {
+      await supabase.auth.updateUser({
+        data: { full_name: cleaned || null },
+      });
+      await supabase.rpc("update_profile_name", {
+        p_full_name: cleaned,
+      });
+      setFullName(cleaned);
+      setEditingName(false);
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function spendCredit(): Promise<boolean> {
     const { data: remaining, error } = await supabase.rpc(
@@ -190,8 +239,51 @@ export default function ScannerClient() {
               <strong>
                 {credits} {credits === 1 ? "scan" : "scans"} left
               </strong>
+              {fullName ? ` · ${fullName}` : ""}
               {email ? ` · ${email}` : ""}
             </span>
+            {editingName ? (
+              <form className="name-edit-form" onSubmit={saveProfileName}>
+                <input
+                  type="text"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  placeholder="Your name"
+                  aria-label="Your display name"
+                  maxLength={80}
+                  disabled={savingName}
+                />
+                <button
+                  type="submit"
+                  className="icon-action-btn"
+                  aria-label="Save name"
+                  disabled={savingName}
+                >
+                  <Check size={14} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="icon-action-btn"
+                  aria-label="Cancel editing name"
+                  onClick={() => setEditingName(false)}
+                  disabled={savingName}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  setNameDraft(fullName);
+                  setEditingName(true);
+                }}
+              >
+                <Pencil size={13} aria-hidden="true" />
+                <span>{fullName ? "Edit name" : "Add name"}</span>
+              </button>
+            )}
             <AccountActions />
           </div>
         </div>
@@ -222,7 +314,7 @@ export default function ScannerClient() {
               </p>
               <PayButton
                 currentCredits={credits}
-                onCreditsChanged={() => refreshCredits(userId)}
+                onCreditsChanged={() => refreshProfile(userId, fullName)}
               />
             </>
           }

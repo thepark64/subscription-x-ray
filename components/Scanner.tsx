@@ -5,13 +5,29 @@ import { motion } from "motion/react";
 import {
   AlertCircle,
   ArrowUpRight,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Download,
   Loader2,
   Lock,
+  Pencil,
   Search,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
 import { analyzeCsv, type ScanResult } from "@/lib/detection";
+import {
+  buildCsvExportFilename,
+  subscriptionsToCsv,
+} from "@/lib/csvExport";
+import {
+  deriveStatementName,
+  isMissingColumnError,
+  normalizeStatementName,
+} from "@/lib/scanHistory";
+import { classifySubscriptionCategory } from "@/lib/services";
 import {
   buildCategoryOptions,
   filterSubscriptions,
@@ -24,8 +40,18 @@ import SpendingTrendChart from "@/components/SpendingTrendChart";
 type PastScan = {
   id: string;
   scanned_at: string;
+  statement_name?: string | null;
   subscription_count: number;
   monthly_total: number;
+};
+
+type SavedSubscriptionRow = {
+  id: string;
+  merchant: string;
+  amount: number;
+  frequency: string;
+  occurrences: number;
+  monthly_equivalent: number;
 };
 
 type ScanPhase = "idle" | "reading" | "parsing" | "saving";
@@ -71,9 +97,21 @@ export default function Scanner({
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
   const [filename, setFilename] = useState("");
+  const [statementLabel, setStatementLabel] = useState("");
+  const [activeScanLabel, setActiveScanLabel] = useState("");
   const [saveNotice, setSaveNotice] = useState("");
   const [pastScans, setPastScans] = useState<PastScan[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
+  const [scanDetails, setScanDetails] = useState<
+    Record<string, SavedSubscriptionRow[]>
+  >({});
+  const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
+  const [renamingScanId, setRenamingScanId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [historyActionBusyId, setHistoryActionBusyId] = useState<string | null>(
+    null
+  );
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [dragging, setDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,37 +151,98 @@ export default function Scanner({
     setSelectedCategory("All");
   }
 
+  function handleDownloadCsv() {
+    if (!filteredSubscriptions.length) return;
+    const csv = subscriptionsToCsv(filteredSubscriptions);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = buildCsvExportFilename(activeScanLabel || filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function readFallbackLabels(): Record<string, string> {
+    try {
+      const raw = window.localStorage.getItem(`xray_scan_names_${userId}`);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeFallbackLabel(scanId: string, name: string) {
+    try {
+      const map = readFallbackLabels();
+      if (name) map[scanId] = name;
+      else delete map[scanId];
+      window.localStorage.setItem(`xray_scan_names_${userId}`, JSON.stringify(map));
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+
   useEffect(() => {
     let active = true;
     setHistoryLoading(true);
-    supabase
-      .from("scans")
-      .select("id, scanned_at, subscription_count, monthly_total")
-      .eq("user_id", userId)
-      .order("scanned_at", { ascending: false })
-      .then(
-        ({ data }) => {
+
+    (async () => {
+      try {
+        const res = await supabase
+          .from("scans")
+          .select("id, scanned_at, statement_name, subscription_count, monthly_total")
+          .eq("user_id", userId)
+          .order("scanned_at", { ascending: false });
+
+        if (!active) return;
+
+        if (res.error && isMissingColumnError(res.error, "statement_name")) {
+          const legacy = await supabase
+            .from("scans")
+            .select("id, scanned_at, subscription_count, monthly_total")
+            .eq("user_id", userId)
+            .order("scanned_at", { ascending: false });
+
           if (!active) return;
-          setPastScans(data ?? []);
-          setHistoryLoading(false);
-        },
-        () => {
-          if (!active) return;
-          setHistoryLoading(false);
+          const labels = readFallbackLabels();
+          setPastScans(
+            (legacy.data ?? []).map((row) => ({
+              ...row,
+              statement_name: labels[row.id] ?? null,
+            }))
+          );
+        } else {
+          const labels = readFallbackLabels();
+          setPastScans(
+            (res.data ?? []).map((row) => ({
+              ...row,
+              statement_name: row.statement_name ?? labels[row.id] ?? null,
+            }))
+          );
         }
-      );
+      } finally {
+        if (active) setHistoryLoading(false);
+      }
+    })();
+
     return () => {
       active = false;
     };
   }, [userId]);
 
-  async function saveScan(data: ScanResult) {
+  async function saveScan(data: ScanResult, sourceFilename: string) {
     setSaveNotice("");
+    const scanName = deriveStatementName(sourceFilename, statementLabel);
+    setActiveScanLabel(scanName);
 
-    const { data: scanRow, error: scanError } = await supabase
+    let insertResult = await supabase
       .from("scans")
       .insert({
         user_id: userId,
+        statement_name: scanName,
         subscription_count: data.subscriptions.length,
         monthly_total: data.monthlyTotal,
         annual_total: data.monthlyTotal * 12,
@@ -151,12 +250,32 @@ export default function Scanner({
       .select()
       .single();
 
+    if (
+      insertResult.error &&
+      isMissingColumnError(insertResult.error, "statement_name")
+    ) {
+      insertResult = await supabase
+        .from("scans")
+        .insert({
+          user_id: userId,
+          subscription_count: data.subscriptions.length,
+          monthly_total: data.monthlyTotal,
+          annual_total: data.monthlyTotal * 12,
+        })
+        .select()
+        .single();
+    }
+
+    const { data: scanRow, error: scanError } = insertResult;
+
     if (scanError || !scanRow) {
       setSaveNotice(
         "Result shown below, but couldn't be saved to your history."
       );
       return;
     }
+
+    writeFallbackLabel(scanRow.id, scanName);
 
     if (data.subscriptions.length) {
       const { error: subsError } = await supabase
@@ -178,15 +297,104 @@ export default function Scanner({
         );
     }
 
+    setStatementLabel("");
     setPastScans((prev) => [
       {
         id: scanRow.id,
         scanned_at: scanRow.scanned_at,
+        statement_name: scanRow.statement_name ?? scanName,
         subscription_count: data.subscriptions.length,
         monthly_total: data.monthlyTotal,
       },
       ...prev,
     ]);
+  }
+
+  async function toggleExpandScan(scanId: string) {
+    if (expandedScanId === scanId) {
+      setExpandedScanId(null);
+      return;
+    }
+    setExpandedScanId(scanId);
+    if (scanDetails[scanId]) return;
+
+    setLoadingDetailsId(scanId);
+    try {
+      const { data } = await supabase
+        .from("detected_subscriptions")
+        .select(
+          "id, merchant, amount, frequency, occurrences, monthly_equivalent"
+        )
+        .eq("scan_id", scanId)
+        .eq("user_id", userId)
+        .order("monthly_equivalent", { ascending: false });
+      setScanDetails((prev) => ({
+        ...prev,
+        [scanId]: data ?? [],
+      }));
+    } finally {
+      setLoadingDetailsId(null);
+    }
+  }
+
+  async function saveScanRename(
+    e: React.FormEvent<HTMLFormElement>,
+    scanId: string
+  ) {
+    e.preventDefault();
+    const cleaned = normalizeStatementName(renameDraft);
+    if (!cleaned) return;
+
+    setHistoryActionBusyId(scanId);
+    try {
+      const { error: updateErr } = await supabase
+        .from("scans")
+        .update({ statement_name: cleaned })
+        .eq("id", scanId)
+        .eq("user_id", userId);
+
+      if (!updateErr || isMissingColumnError(updateErr, "statement_name")) {
+        writeFallbackLabel(scanId, cleaned);
+        setPastScans((prev) =>
+          prev.map((row) =>
+            row.id === scanId ? { ...row, statement_name: cleaned } : row
+          )
+        );
+        setRenamingScanId(null);
+      } else {
+        setSaveNotice("Could not rename this scan right now.");
+      }
+    } finally {
+      setHistoryActionBusyId(null);
+    }
+  }
+
+  async function deletePastScan(scanId: string) {
+    const confirmed = window.confirm(
+      "Remove this scan from your history? Your remaining scan credits will not change."
+    );
+    if (!confirmed) return;
+
+    setHistoryActionBusyId(scanId);
+    try {
+      const { error: delError } = await supabase
+        .from("scans")
+        .delete()
+        .eq("id", scanId)
+        .eq("user_id", userId);
+
+      if (delError) {
+        setSaveNotice("Could not delete this scan from your history.");
+        return;
+      }
+
+      writeFallbackLabel(scanId, "");
+      setPastScans((prev) => prev.filter((row) => row.id !== scanId));
+      if (expandedScanId === scanId) setExpandedScanId(null);
+      if (renamingScanId === scanId) setRenamingScanId(null);
+    } finally {
+      setHistoryActionBusyId(null);
+    }
   }
 
   async function handleFile(file: File) {
@@ -228,7 +436,7 @@ export default function Scanner({
       setResult(data);
       setSearchQuery("");
       setSelectedCategory("All");
-      await saveScan(data);
+      await saveScan(data, file.name);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : "Could not read this CSV.");
@@ -338,6 +546,16 @@ export default function Scanner({
               ? phaseInfo?.detail
               : "CSV files with date, description/narration and amount (or debit) columns work best."}
           </p>
+          <input
+            type="text"
+            className="statement-name-input"
+            value={statementLabel}
+            onChange={(e) => setStatementLabel(e.target.value)}
+            placeholder="Optional scan name (e.g. HDFC Savings Oct)"
+            aria-label="Optional name for this statement scan"
+            maxLength={80}
+            disabled={busy}
+          />
           <label className="btn btn-primary" aria-disabled={busy}>
             {busy && (
               <Loader2 size={16} className="spin-icon" aria-hidden="true" />
@@ -448,8 +666,21 @@ export default function Scanner({
           )}
 
           <div className="result-heading">
-            <p className="eyebrow">Detected subscriptions</p>
-            <h2>Your recurring charges</h2>
+            <div>
+              <p className="eyebrow">Detected subscriptions</p>
+              <h2>Your recurring charges</h2>
+            </div>
+            {result.subscriptions.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleDownloadCsv}
+                disabled={filteredSubscriptions.length === 0}
+              >
+                <Download size={15} aria-hidden="true" />
+                <span>Download CSV</span>
+              </button>
+            )}
           </div>
 
           {result.subscriptions.length > 0 ? (
@@ -610,21 +841,160 @@ export default function Scanner({
         <div className="history">
           <p className="eyebrow">Your scan history</p>
           <div className="glass-panel history-list">
-            {pastScans.map((s) => (
-              <div className="history-row" key={s.id}>
-                <span>
-                  {new Date(s.scanned_at).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-                <span>{s.subscription_count} recurring charges</span>
-                <span className="history-amount">
-                  ₹{Number(s.monthly_total).toLocaleString("en-IN")}/mo
-                </span>
-              </div>
-            ))}
+            {pastScans.map((s) => {
+              const displayName = s.statement_name?.trim() || "Statement scan";
+              const isExpanded = expandedScanId === s.id;
+              const isRenaming = renamingScanId === s.id;
+              const isRowBusy = historyActionBusyId === s.id;
+              const details = scanDetails[s.id];
+
+              return (
+                <div className="history-item" key={s.id}>
+                  <div className="history-row">
+                    <div className="history-main">
+                      {isRenaming ? (
+                        <form
+                          className="history-rename-form"
+                          onSubmit={(e) => saveScanRename(e, s.id)}
+                        >
+                          <input
+                            type="text"
+                            value={renameDraft}
+                            onChange={(e) => setRenameDraft(e.target.value)}
+                            aria-label="Scan history name"
+                            maxLength={80}
+                            autoFocus
+                            disabled={isRowBusy}
+                          />
+                          <button
+                            type="submit"
+                            className="icon-action-btn"
+                            aria-label="Save scan name"
+                            disabled={isRowBusy || !renameDraft.trim()}
+                          >
+                            <Check size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-action-btn"
+                            aria-label="Cancel rename"
+                            onClick={() => setRenamingScanId(null)}
+                            disabled={isRowBusy}
+                          >
+                            <X size={14} aria-hidden="true" />
+                          </button>
+                        </form>
+                      ) : (
+                        <>
+                          <strong className="history-title">
+                            {displayName}
+                          </strong>
+                          <span className="history-meta">
+                            {new Date(s.scanned_at).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            · {s.subscription_count}{" "}
+                            {s.subscription_count === 1 ? "charge" : "charges"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="history-right">
+                      <span className="history-amount">
+                        ₹
+                        {Number(s.monthly_total).toLocaleString("en-IN", {
+                          maximumFractionDigits: 2,
+                        })}
+                        /mo
+                      </span>
+                      <div className="history-actions">
+                        <button
+                          type="button"
+                          className="icon-action-btn"
+                          aria-label={`Rename ${displayName}`}
+                          title="Rename scan"
+                          onClick={() => {
+                            setRenameDraft(displayName);
+                            setRenamingScanId(s.id);
+                          }}
+                          disabled={isRowBusy}
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-action-btn"
+                          aria-expanded={isExpanded}
+                          aria-label={
+                            isExpanded
+                              ? `Hide charges for ${displayName}`
+                              : `View charges for ${displayName}`
+                          }
+                          title={isExpanded ? "Hide details" : "View details"}
+                          onClick={() => toggleExpandScan(s.id)}
+                          disabled={isRowBusy}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp size={15} aria-hidden="true" />
+                          ) : (
+                            <ChevronDown size={15} aria-hidden="true" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-action-btn is-danger"
+                          aria-label={`Delete ${displayName}`}
+                          title="Delete scan"
+                          onClick={() => deletePastScan(s.id)}
+                          disabled={isRowBusy}
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="history-details">
+                      {loadingDetailsId === s.id ? (
+                        <p className="history-detail-empty">
+                          Loading saved charges…
+                        </p>
+                      ) : details && details.length > 0 ? (
+                        <div className="history-detail-list">
+                          {details.map((item) => (
+                            <div className="history-detail-row" key={item.id}>
+                              <div>
+                                <strong>{item.merchant}</strong>
+                                <span className="history-detail-meta">
+                                  {item.frequency} · {item.occurrences} charges ·{" "}
+                                  {classifySubscriptionCategory(item.merchant)}
+                                </span>
+                              </div>
+                              <span className="history-detail-amount">
+                                ₹
+                                {Number(item.monthly_equivalent).toLocaleString(
+                                  "en-IN",
+                                  { maximumFractionDigits: 2 }
+                                )}
+                                /mo
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="history-detail-empty">
+                          No recurring charges were saved for this scan.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
