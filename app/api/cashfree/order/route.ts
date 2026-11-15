@@ -5,7 +5,9 @@ import {
   buildCashfreeOrderPayload,
   cashfreeHeaders,
   getCashfreeConfig,
+  getMissingPaymentEnvVars,
 } from "@/lib/cashfree";
+import { SITE_URL } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -17,8 +19,14 @@ export async function POST(req: NextRequest) {
   const cf = getCashfreeConfig();
   const admin = getSupabaseAdmin();
   if (!cf || !admin) {
+    const missing = getMissingPaymentEnvVars();
     return NextResponse.json(
-      { error: "Payments are not configured yet." },
+      {
+        error: missing.length
+          ? `Payments are not configured yet. Missing server variable(s): ${missing.join(", ")}. Add them in your hosting environment variables and redeploy.`
+          : "Payments are not configured yet.",
+        missing,
+      },
       { status: 500 }
     );
   }
@@ -56,10 +64,7 @@ export async function POST(req: NextRequest) {
   }
 
   const orderId = `xray_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-  const origin =
-    req.headers.get("origin") ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    req.nextUrl.origin;
+  const origin = req.headers.get("origin") || SITE_URL || req.nextUrl.origin;
 
   const fullName =
     typeof user.user_metadata?.full_name === "string"

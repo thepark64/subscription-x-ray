@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check, Lock, ScanSearch } from "lucide-react";
+import AuthCallbackHandler from "@/components/AuthCallbackHandler";
 
 const SAMPLE_CHARGES = [
   { name: "Netflix", amount: "₹649/mo", note: "" },
@@ -12,6 +13,7 @@ const SAMPLE_CHARGES = [
 export default function Home() {
   return (
     <>
+      <AuthCallbackHandler />
       <header className="topbar-wrap">
         <div className="wrap navrow">
           <Link

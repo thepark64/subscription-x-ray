@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildCashfreeOrderPayload } from "@/lib/cashfree";
+import {
+  buildCashfreeOrderPayload,
+  getCashfreeConfig,
+  getMissingPaymentEnvVars,
+} from "@/lib/cashfree";
 import {
   runCashfreeDiagnostics,
   validateCashfreeOrderPayload,
@@ -91,5 +95,31 @@ describe("runCashfreeDiagnostics", () => {
     const endpointStep = report.steps.find((s) => s.id === "endpoint_resolution");
     expect(envStep?.status).toBe("warn");
     expect(endpointStep?.details.mode).toBe("sandbox");
+  });
+
+  it("reports exact missing env var names and supports CASHFREE_CLIENT_* aliases", () => {
+    delete process.env.CASHFREE_APP_ID;
+    delete process.env.CASHFREE_CLIENT_ID;
+    delete process.env.NEXT_PUBLIC_CASHFREE_APP_ID;
+    delete process.env.CASHFREE_SECRET_KEY;
+    delete process.env.CASHFREE_CLIENT_SECRET;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    expect(getMissingPaymentEnvVars()).toEqual([
+      "CASHFREE_APP_ID",
+      "CASHFREE_SECRET_KEY",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ]);
+
+    process.env.CASHFREE_CLIENT_ID = "TEST_ALIAS_ID";
+    process.env.CASHFREE_CLIENT_SECRET = "cfsk_ma_test_alias_secret";
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service_role_secret";
+
+    expect(getMissingPaymentEnvVars()).toEqual([]);
+    expect(getCashfreeConfig()?.mode).toBe("sandbox");
   });
 });

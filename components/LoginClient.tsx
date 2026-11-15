@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
+import {
+  extractAuthErrorFromLocation,
+  getEmailConfirmationRedirectUrl,
+  getPasswordResetRedirectUrl,
+} from "@/lib/authRedirect";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -23,6 +28,14 @@ export default function LoginClient() {
   useEffect(() => {
     if (!supabaseConfigured) return;
 
+    const urlError = extractAuthErrorFromLocation(
+      window.location.search,
+      window.location.hash
+    );
+    if (urlError) {
+      setError(urlError);
+    }
+
     let active = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (active && session) {
@@ -33,7 +46,11 @@ export default function LoginClient() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (active && event === "SIGNED_IN" && session) {
+        if (
+          active &&
+          session &&
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION")
+        ) {
           router.replace("/scanner");
           router.refresh();
         }
@@ -64,7 +81,7 @@ export default function LoginClient() {
       if (mode === "forgot") {
         const { error: resetError } =
           await supabase.auth.resetPasswordForEmail(email.trim(), {
-            redirectTo: `${window.location.origin}/reset-password`,
+            redirectTo: getPasswordResetRedirectUrl(),
           });
 
         if (resetError) {
@@ -82,7 +99,7 @@ export default function LoginClient() {
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`,
+            emailRedirectTo: getEmailConfirmationRedirectUrl(),
             ...(cleanName ? { data: { full_name: cleanName } } : {}),
           },
         });

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { cashfreeHeaders, getCashfreeConfig } from "@/lib/cashfree";
+import {
+  cashfreeHeaders,
+  getCashfreeConfig,
+  getMissingPaymentEnvVars,
+} from "@/lib/cashfree";
 import { PACK_PRICE_RUPEES, PACK_SIZE } from "@/lib/config";
 
 export const runtime = "nodejs";
@@ -20,8 +24,14 @@ export async function POST(req: NextRequest) {
   const cf = getCashfreeConfig();
   const admin = getSupabaseAdmin();
   if (!cf || !admin) {
+    const missing = getMissingPaymentEnvVars();
     return NextResponse.json(
-      { error: "Payments are not configured yet." },
+      {
+        error: missing.length
+          ? `Payments are not configured yet. Missing server variable(s): ${missing.join(", ")}. Add them in your hosting environment variables and redeploy.`
+          : "Payments are not configured yet.",
+        missing,
+      },
       { status: 500 }
     );
   }

@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  FileText,
   Loader2,
   Lock,
   Pencil,
@@ -22,6 +23,7 @@ import {
   buildCsvExportFilename,
   subscriptionsToCsv,
 } from "@/lib/csvExport";
+import { exportSubscriptionsToPdf } from "@/lib/pdfExport";
 import {
   deriveStatementName,
   isMissingColumnError,
@@ -114,6 +116,7 @@ export default function Scanner({
   );
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [dragging, setDragging] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -163,6 +166,35 @@ export default function Scanner({
     link.click();
     document.body.removeChild(link);
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function handleExportPdf() {
+    if (!result || !filteredSubscriptions.length || exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const filterParts: string[] = [];
+      if (selectedCategory !== "All") {
+        filterParts.push(`Category: ${selectedCategory}`);
+      }
+      if (searchQuery.trim()) {
+        filterParts.push(`Search: "${searchQuery.trim()}"`);
+      }
+
+      await exportSubscriptionsToPdf({
+        subscriptions: filteredSubscriptions,
+        statementName: activeScanLabel || filename,
+        transactionsAnalyzed: result.transactionsAnalyzed,
+        periodDays: result.periodDays,
+        filterSummary:
+          filterParts.length > 0
+            ? `Filtered view (${filterParts.join(" · ")})`
+            : undefined,
+      });
+    } catch {
+      setError("Could not generate the PDF report. Please try again.");
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   function readFallbackLabels(): Record<string, string> {
@@ -671,15 +703,30 @@ export default function Scanner({
               <h2>Your recurring charges</h2>
             </div>
             {result.subscriptions.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={handleDownloadCsv}
-                disabled={filteredSubscriptions.length === 0}
-              >
-                <Download size={15} aria-hidden="true" />
-                <span>Download CSV</span>
-              </button>
+              <div className="result-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleExportPdf}
+                  disabled={filteredSubscriptions.length === 0 || exportingPdf}
+                >
+                  {exportingPdf ? (
+                    <Loader2 size={15} className="spin-icon" aria-hidden="true" />
+                  ) : (
+                    <FileText size={15} aria-hidden="true" />
+                  )}
+                  <span>{exportingPdf ? "Exporting…" : "Export to PDF"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleDownloadCsv}
+                  disabled={filteredSubscriptions.length === 0}
+                >
+                  <Download size={15} aria-hidden="true" />
+                  <span>Download CSV</span>
+                </button>
+              </div>
             )}
           </div>
 

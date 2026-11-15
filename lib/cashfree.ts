@@ -34,8 +34,14 @@ export function getCashfreeConfig(): {
   mode: CashfreeMode;
   baseUrl: string;
 } | null {
-  const appId = cleanEnvValue(process.env.CASHFREE_APP_ID);
-  const secretKey = cleanEnvValue(process.env.CASHFREE_SECRET_KEY);
+  const appId = cleanEnvValue(
+    process.env.CASHFREE_APP_ID ||
+      process.env.CASHFREE_CLIENT_ID ||
+      process.env.NEXT_PUBLIC_CASHFREE_APP_ID
+  );
+  const secretKey = cleanEnvValue(
+    process.env.CASHFREE_SECRET_KEY || process.env.CASHFREE_CLIENT_SECRET
+  );
   if (!appId || !secretKey) return null;
 
   const envMode = cleanEnvValue(process.env.CASHFREE_ENV).toLowerCase();
@@ -62,6 +68,29 @@ export function getCashfreeConfig(): {
       : "https://api.cashfree.com/pg";
 
   return { appId, secretKey, mode, baseUrl };
+}
+
+export function getMissingPaymentEnvVars(): string[] {
+  const missing: string[] = [];
+  const appId = cleanEnvValue(
+    process.env.CASHFREE_APP_ID ||
+      process.env.CASHFREE_CLIENT_ID ||
+      process.env.NEXT_PUBLIC_CASHFREE_APP_ID
+  );
+  const secretKey = cleanEnvValue(
+    process.env.CASHFREE_SECRET_KEY || process.env.CASHFREE_CLIENT_SECRET
+  );
+  const supabaseUrl = cleanEnvValue(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  );
+  const serviceKey = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (!appId) missing.push("CASHFREE_APP_ID");
+  if (!secretKey) missing.push("CASHFREE_SECRET_KEY");
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+  return missing;
 }
 
 export function buildCashfreeOrderPayload(params: {

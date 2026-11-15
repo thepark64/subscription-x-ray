@@ -1024,6 +1024,13 @@ footer {
   margin: 4px 0 0;
 }
 
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .results-toolbar {
   display: flex;
   flex-direction: column;
@@ -1771,5 +1778,29 @@ footer {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .ambient-canvas,
+  .scanner-top,
+  .dropzone,
+  .upload-btn,
+  .results-toolbar,
+  .result-actions,
+  .results-clear-btn {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  .glass-panel {
+    background: #ffffff;
+    backdrop-filter: none;
+    box-shadow: none;
+    border-color: #cbd5e1;
   }
 }
