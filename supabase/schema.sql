@@ -34,17 +34,72 @@ create table if not exists detected_subscriptions (
 create table if not exists payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete set null,
-  razorpay_payment_id text unique,   -- unique: makes webhook retries idempotent
-  razorpay_order_id text,
+  cashfree_payment_id text unique,   -- unique: makes webhook/verify retries idempotent
+  cashfree_order_id text,
   amount numeric(12,2),
   status text,
   created_at timestamptz not null default now()
 );
 
+-- Migrate legacy Razorpay column names to Cashfree while keeping the unique constraint.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'payments'
+      and column_name = 'razorpay_payment_id'
+  ) and not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'payments'
+      and column_name = 'cashfree_payment_id'
+  ) then
+    alter table public.payments rename column razorpay_payment_id to cashfree_payment_id;
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'payments'
+      and column_name = 'razorpay_order_id'
+  ) and not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'payments'
+      and column_name = 'cashfree_order_id'
+  ) then
+    alter table public.payments rename column razorpay_order_id to cashfree_order_id;
+  end if;
+
+  alter table public.payments add column if not exists cashfree_payment_id text;
+  alter table public.payments add column if not exists cashfree_order_id text;
+
+  if not exists (
+    select 1
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    join pg_attribute a on a.attrelid = t.oid and a.attnum = any(c.conkey)
+    where n.nspname = 'public'
+      and t.relname = 'payments'
+      and c.contype = 'u'
+      and array_length(c.conkey, 1) = 1
+      and a.attname = 'cashfree_payment_id'
+  ) then
+    alter table public.payments
+      add constraint payments_cashfree_payment_id_key unique (cashfree_payment_id);
+  end if;
+end;
+$$;
+
 -- Older installs may be missing these; harmless if already present.
 alter table profiles add column if not exists full_name text;
 alter table scans add column if not exists statement_name text;
-alter table payments add column if not exists razorpay_order_id text;
 alter table profiles drop constraint if exists profiles_scan_credits_check;
 alter table profiles add constraint profiles_scan_credits_check check (scan_credits >= 0);
 
@@ -151,9 +206,10 @@ grant execute on function public.update_profile_name(text) to authenticated;
 -- ---------------------------------------------------------------------------
 
 -- Records a verified payment AND grants credits in ONE transaction.
--- If anything fails, nothing is recorded, so Razorpay's retry can safely try
--- again. If the payment id was already processed, returns null and grants
--- nothing (duplicate webhook). Callable by the service role only.
+-- If anything fails, nothing is recorded, so Cashfree's webhook/verify retry
+-- can safely try again. If the payment id was already processed, returns null
+-- and grants nothing (duplicate webhook or verification call). Callable by the
+-- service role only.
 create or replace function public.process_payment(
   p_user uuid,
   p_payment_id text,
@@ -170,9 +226,9 @@ declare
   inserted_id uuid;
   remaining integer;
 begin
-  insert into payments (user_id, razorpay_payment_id, razorpay_order_id, amount, status)
+  insert into payments (user_id, cashfree_payment_id, cashfree_order_id, amount, status)
   values (p_user, p_payment_id, p_order_id, p_amount, 'captured')
-  on conflict (razorpay_payment_id) do nothing
+  on conflict (cashfree_payment_id) do nothing
   returning id into inserted_id;
 
   if inserted_id is null then

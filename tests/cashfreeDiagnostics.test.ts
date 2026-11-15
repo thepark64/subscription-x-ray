@@ -3,6 +3,7 @@ import {
   buildCashfreeOrderPayload,
   getCashfreeConfig,
   getMissingPaymentEnvVars,
+  normalizeCustomerPhone,
 } from "@/lib/cashfree";
 import {
   runCashfreeDiagnostics,
@@ -121,5 +122,25 @@ describe("runCashfreeDiagnostics", () => {
 
     expect(getMissingPaymentEnvVars()).toEqual([]);
     expect(getCashfreeConfig()?.mode).toBe("sandbox");
+  });
+
+  it("uses user phone when present and falls back to a 10-digit placeholder when missing", () => {
+    expect(normalizeCustomerPhone("+91 98765-43210")).toBe("9876543210");
+    expect(normalizeCustomerPhone(undefined)).toBe("9999999999");
+
+    const withPhone = buildCashfreeOrderPayload({
+      orderId: "xray_123456_abcd",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      customerPhone: "+91 98765-43210",
+      origin: "https://subscription-x-ray.vercel.app",
+    });
+    expect(withPhone.customer_details.customer_phone).toBe("9876543210");
+
+    const withoutPhone = buildCashfreeOrderPayload({
+      orderId: "xray_123456_abcd",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      origin: "https://subscription-x-ray.vercel.app",
+    });
+    expect(withoutPhone.customer_details.customer_phone).toBe("9999999999");
   });
 });

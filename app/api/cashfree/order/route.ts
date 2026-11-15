@@ -7,7 +7,6 @@ import {
   getCashfreeConfig,
   getMissingPaymentEnvVars,
 } from "@/lib/cashfree";
-import { SITE_URL } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -64,18 +63,28 @@ export async function POST(req: NextRequest) {
   }
 
   const orderId = `xray_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-  const origin = req.headers.get("origin") || SITE_URL || req.nextUrl.origin;
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
+    req.headers.get("origin") ||
+    req.nextUrl.origin;
 
   const fullName =
     typeof user.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : undefined;
+  const customerPhone =
+    typeof user.phone === "string" && user.phone.trim()
+      ? user.phone
+      : typeof user.user_metadata?.phone === "string"
+        ? user.user_metadata.phone
+        : undefined;
 
   const payload = buildCashfreeOrderPayload({
     orderId,
     userId: user.id,
     email: user.email ?? undefined,
     customerName: fullName,
+    customerPhone,
     origin,
   });
 

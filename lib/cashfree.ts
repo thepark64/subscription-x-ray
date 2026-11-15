@@ -93,15 +93,27 @@ export function getMissingPaymentEnvVars(): string[] {
   return missing;
 }
 
+const DEFAULT_CUSTOMER_PHONE = "9999999999";
+
+export function normalizeCustomerPhone(phone?: string): string {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  if (digits.length >= 10) {
+    return digits.slice(-10);
+  }
+  return DEFAULT_CUSTOMER_PHONE;
+}
+
 export function buildCashfreeOrderPayload(params: {
   orderId: string;
   userId: string;
   email?: string;
   customerName?: string;
+  customerPhone?: string;
   origin: string;
 }): CashfreeOrderPayload {
   const cleanOrigin = params.origin.replace(/\/+$/, "");
   const cleanName = params.customerName?.trim();
+  const customerPhone = normalizeCustomerPhone(params.customerPhone);
   return {
     order_id: params.orderId,
     order_amount: PACK_PRICE_RUPEES,
@@ -110,7 +122,7 @@ export function buildCashfreeOrderPayload(params: {
       customer_id: params.userId,
       ...(cleanName ? { customer_name: cleanName } : {}),
       ...(params.email ? { customer_email: params.email } : {}),
-      customer_phone: "9999999999",
+      customer_phone: customerPhone,
     },
     order_meta: {
       return_url: `${cleanOrigin}/scanner?cf_order_id={order_id}`,

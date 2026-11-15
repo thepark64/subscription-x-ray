@@ -94,7 +94,7 @@ export default function ScannerClient() {
             },
             body: JSON.stringify({ orderId: cfOrderId }),
           });
-          if (verifyRes.ok) {
+          if (verifyRes.status === 200) {
             setPaymentNotice(
               `Payment confirmed — ${PACK_SIZE} scan credits added to your account.`
             );

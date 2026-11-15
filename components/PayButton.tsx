@@ -59,11 +59,20 @@ export default function PayButton({
           },
           body: JSON.stringify({ orderId }),
         });
-        if (verifyRes.ok) {
+        if (verifyRes.status === 200) {
           await onCreditsChanged();
           setWaiting(false);
           setBusy(false);
           return;
+        }
+        if (verifyRes.status === 202) {
+          const latest = await onCreditsChanged();
+          if (latest > currentCredits) {
+            setWaiting(false);
+            setBusy(false);
+            return;
+          }
+          continue;
         }
         const latest = await onCreditsChanged();
         if (latest > currentCredits) {
@@ -94,7 +103,7 @@ export default function PayButton({
         body: JSON.stringify({ orderId }),
       });
 
-      if (verifyRes.ok) {
+      if (verifyRes.status === 200) {
         await onCreditsChanged();
         setWaiting(false);
         setBusy(false);

@@ -1,6 +1,6 @@
 # Subscription X-Ray V3
 
-A privacy-first recurring-charge finder built with Next.js 15, React 19, Supabase Auth/Postgres, and Razorpay.
+A privacy-first recurring-charge finder built with Next.js 15, React 19, Supabase Auth/Postgres, and Cashfree.
 
 ## Product behaviour
 
@@ -10,13 +10,13 @@ A privacy-first recurring-charge finder built with Next.js 15, React 19, Supabas
 - A successful scan spends one credit through the atomic `consume_scan_credit()` database function.
 - Scan summaries and detected merchant/amount/frequency results are saved to the signed-in user's account for history.
 - Recognised merchants can show a direct account-management/help link. The app does **not** cancel subscriptions automatically.
-- Payment credits are added only by the signed Razorpay webhook, never by the browser checkout callback.
-- Each Razorpay payment ID can be processed once. Payment insertion and credit grant happen in one Postgres transaction.
+- Payment credits are added either by the signed Cashfree webhook (`/api/webhooks/cashfree`) or by `/api/cashfree/verify`, both of which re-check the order directly with Cashfree's API before crediting. The browser never grants credits on its own.
+- Each Cashfree payment ID can be processed once. Payment insertion and credit grant happen in one Postgres transaction.
 - Users can request account deletion from the scanner screen; the API deletes the Supabase Auth user, and database foreign keys cascade the account's scan history/results.
 
 ## Local development
 
-Requirements: Node.js 20+, npm, a Supabase project, and Razorpay test keys (only needed to test checkout).
+Requirements: Node.js 20+, npm, a Supabase project, and Cashfree sandbox keys (only needed to test checkout).
 
 ```bash
 npm install
@@ -36,9 +36,9 @@ Set these in `.env.local` locally and in your Vercel project settings:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API | Public |
 | `NEXT_PUBLIC_SITE_URL` | Your canonical HTTPS domain | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | **Server only** |
-| `RAZORPAY_KEY_ID` | Razorpay → Account & Settings → API Keys | Public checkout key, server configured |
-| `RAZORPAY_KEY_SECRET` | Razorpay → Account & Settings → API Keys | **Server only** |
-| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook configuration | **Server only** |
+| `CASHFREE_APP_ID` | Cashfree → Developers → API Keys | **Server only** |
+| `CASHFREE_SECRET_KEY` | Cashfree → Developers → API Keys | **Server only** |
+| `CASHFREE_ENV` | `sandbox` or `production` | **Server only** |
 
 Never commit `.env.local`, production keys, or screenshots containing secrets.
 
@@ -49,27 +49,27 @@ Never commit `.env.local`, production keys, or screenshots containing secrets.
 3. Review and run `supabase/schema.sql` against the project.
 4. In Authentication → URL Configuration, set the Site URL to your production URL and add:
    - `http://localhost:3000/**`
-   - `https://subscriptionxray.jo3.org/**`
+   - `https://subscription-x-ray.vercel.app/**`
    - your Vercel preview URL pattern if you use preview deployments.
 5. Enable email confirmation if desired and configure Supabase email delivery.
 6. Confirm the `profiles` row is created on signup by the `on_auth_user_created` trigger.
 
-The SQL is designed to be re-runnable and includes a backfill for existing auth users. It adds/updates the `payments.razorpay_order_id` column, RLS policies, and credit functions. Back up your database before applying it to an existing production project.
+The SQL is designed to be re-runnable and includes a backfill for existing auth users. It migrates legacy `payments.razorpay_payment_id` / `payments.razorpay_order_id` columns to `cashfree_payment_id` / `cashfree_order_id`, preserves the unique constraint, and updates RLS policies and credit functions. Back up your database before applying it to an existing production project.
 
-## Razorpay setup
+## Cashfree setup
 
-1. Use **Test Mode** keys first.
-2. Configure the checkout API key ID and secret in environment variables.
-3. In Razorpay Dashboard → Account & Settings → Webhooks, create a webhook pointing to:
+1. Use **Sandbox** keys first (`TEST*` App ID and `cfsk_ma_test_*` secret key with `CASHFREE_ENV=sandbox`).
+2. Configure `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, and `CASHFREE_ENV` in environment variables.
+3. In Cashfree Dashboard → Developers → Webhooks, create a webhook pointing to:
 
-   `https://YOUR_DOMAIN/api/razorpay/webhook`
+   `https://YOUR_DOMAIN/api/webhooks/cashfree`
 
-4. Set the webhook secret to the exact value in `RAZORPAY_WEBHOOK_SECRET`.
-5. Subscribe to the `payment.captured` event.
+4. Cashfree signs webhooks with your `CASHFREE_SECRET_KEY` (`x-webhook-signature` and `x-webhook-timestamp`).
+5. Subscribe to the `PAYMENT_SUCCESS_WEBHOOK` event.
 6. Deploy and make a test purchase. Verify that the payment appears in `payments` and that exactly 12 credits are added.
-7. Only after end-to-end test success, switch to Live Mode keys and re-check the webhook secret.
+7. Only after end-to-end test success, switch to Production keys (`CASHFREE_ENV=production`).
 
-The webhook fetches the Razorpay order from Razorpay's API and verifies its order ID, exact amount, INR currency, user ID note, and pack-size note before invoking the atomic database function.
+Both the webhook and `/api/cashfree/verify` fetch the order directly from Cashfree's API and verify its order ID, exact amount, INR currency, user ID tag, and pack-size tag before invoking the atomic database function.
 
 ## Deploy to Vercel
 
@@ -99,10 +99,10 @@ Detection is heuristic. It looks for repeating intervals and similar amounts. It
 ## Important production checklist
 
 - Have the Terms, Privacy Policy, and Refund Policy reviewed for your actual business and applicable Indian law. The included pages are editable starter copy, not legal advice.
-- Confirm the final refund window, business identity, GST/invoice obligations if applicable, and Razorpay merchant onboarding requirements.
+- Confirm the final refund window, business identity, GST/invoice obligations if applicable, and Cashfree merchant onboarding requirements.
 - Configure Supabase backups, email delivery, and monitoring.
 - Add a durable rate limiter/WAF rule for order creation and account endpoints before significant public traffic.
-- Test webhook retries and unmatched payments using Razorpay test mode.
+- Test webhook retries, `/api/cashfree/verify` polling, and unmatched payments using Cashfree sandbox mode.
 - The scan credit protects the app workflow; browser-only analysis cannot prevent a technically skilled user from running local parsing outside the app. Do not claim that the client-side parser itself is tamper-proof.
 - The app stores scan summaries/results for history. If you later want a strict zero-retention product, disable result persistence and update the privacy notice.
 
