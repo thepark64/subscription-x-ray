@@ -15,6 +15,7 @@ create table if not exists scans (
   user_id uuid not null references profiles(id) on delete cascade,
   scanned_at timestamptz not null default now(),
   statement_name text,
+  file_name text,
   subscription_count integer not null default 0,
   monthly_total numeric(12,2) not null default 0,
   annual_total numeric(12,2) not null default 0
@@ -100,6 +101,7 @@ $$;
 -- Older installs may be missing these; harmless if already present.
 alter table profiles add column if not exists full_name text;
 alter table scans add column if not exists statement_name text;
+alter table scans add column if not exists file_name text;
 alter table profiles drop constraint if exists profiles_scan_credits_check;
 alter table profiles add constraint profiles_scan_credits_check check (scan_credits >= 0);
 

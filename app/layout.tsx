@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/config";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
           <div className="ambient-glow ambient-glow-secondary" />
         </div>
         <div className="app-shell">{children}</div>
+        <Analytics />
       </body>
     </html>
   );

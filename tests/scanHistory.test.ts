@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   deriveStatementName,
+  formatScanTimestamp,
+  formatSubscriptionCountLabel,
   isMissingColumnError,
+  normalizeFileName,
   normalizeStatementName,
 } from "../lib/scanHistory";
 
@@ -26,6 +29,22 @@ describe("scanHistory helpers", () => {
     const long = "A ".repeat(60);
     const normalized = normalizeStatementName(long);
     expect(normalized.length).toBeLessThanOrEqual(80);
+  });
+
+  it("normalizes CSV file names, timestamps, and subscription count labels", () => {
+    expect(normalizeFileName("C:\\fakepath\\hdfc_oct_2026.csv")).toBe(
+      "hdfc_oct_2026.csv"
+    );
+    expect(normalizeFileName("/Users/demo/Downloads/card.csv")).toBe("card.csv");
+
+    const formatted = formatScanTimestamp("2026-11-15T11:48:00.000Z");
+    expect(formatted).toContain("2026");
+    expect(formatted).toContain("Nov");
+    expect(formatted).toMatch(/\d{1,2}:\d{2}/);
+
+    expect(formatSubscriptionCountLabel(0)).toBe("0 subscriptions found");
+    expect(formatSubscriptionCountLabel(1)).toBe("1 subscription found");
+    expect(formatSubscriptionCountLabel(4)).toBe("4 subscriptions found");
   });
 
   it("detects PostgREST/Postgres missing column errors", () => {

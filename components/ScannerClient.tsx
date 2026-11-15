@@ -8,6 +8,7 @@ import { isMissingColumnError, normalizeStatementName } from "@/lib/scanHistory"
 import Scanner from "@/components/Scanner";
 import PayButton from "@/components/PayButton";
 import AccountActions from "@/components/AccountActions";
+import BrandMark from "@/components/BrandMark";
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 
 type Gate =
@@ -164,6 +165,7 @@ export default function ScannerClient() {
         <div className="glass-panel gate-card">
           <Link href="/" className="back" style={{ marginBottom: 20 }}>
             <ArrowLeft size={16} aria-hidden="true" />
+            <BrandMark size={22} />
             <span>Subscription X-Ray</span>
           </Link>
           <h1>Connect Supabase to enable accounts</h1>
@@ -208,6 +210,7 @@ export default function ScannerClient() {
         <div className="glass-panel gate-card">
           <Link href="/" className="back" style={{ marginBottom: 20 }}>
             <ArrowLeft size={16} aria-hidden="true" />
+            <BrandMark size={22} />
             <span>Subscription X-Ray</span>
           </Link>
           <h1>Sign in to scan your statements</h1>
@@ -227,20 +230,25 @@ export default function ScannerClient() {
 
   return (
     <main className="scanner-page">
-      <div className="wrap">
-        <div className="glass-panel scanner-top">
-          <Link href="/" className="back">
-            <ArrowLeft size={16} aria-hidden="true" />
-            <span>Subscription X-Ray</span>
-          </Link>
+      <div className="wrap wrap-dashboard">
+        <header className="glass-panel scanner-top">
+          <div className="scanner-brand-group">
+            <Link href="/" className="back">
+              <ArrowLeft size={15} aria-hidden="true" />
+              <BrandMark size={26} />
+              <span>Subscription X-Ray</span>
+            </Link>
+            <span className="topbar-sep" aria-hidden="true">
+              /
+            </span>
+            <span className="topbar-context">Statement scanner</span>
+          </div>
+
           <div className="scanner-account">
             <span className="account-meta">
-              <Lock size={14} aria-hidden="true" />
-              <strong>
-                {credits} {credits === 1 ? "scan" : "scans"} left
-              </strong>
-              {fullName ? ` · ${fullName}` : ""}
-              {email ? ` · ${email}` : ""}
+              {fullName && <strong>{fullName}</strong>}
+              {fullName && email && <span aria-hidden="true">·</span>}
+              {email && <span>{email}</span>}
             </span>
             {editingName ? (
               <form className="name-edit-form" onSubmit={saveProfileName}>
@@ -286,7 +294,7 @@ export default function ScannerClient() {
             )}
             <AccountActions />
           </div>
-        </div>
+        </header>
         {paymentNotice && (
           <div className="notice-box" style={{ marginBottom: 20 }} role="status">
             {paymentNotice}
@@ -304,19 +312,14 @@ export default function ScannerClient() {
         )}
         <Scanner
           userId={userId}
+          credits={credits}
           locked={locked}
           spendCredit={spendCredit}
           paywall={
-            <>
-              <p>
-                {PACK_SIZE} scans for {PACK_PRICE_LABEL}, one-time. Nothing
-                repeats automatically.
-              </p>
-              <PayButton
-                currentCredits={credits}
-                onCreditsChanged={() => refreshProfile(userId, fullName)}
-              />
-            </>
+            <PayButton
+              currentCredits={credits}
+              onCreditsChanged={() => refreshProfile(userId, fullName)}
+            />
           }
         />
       </div>

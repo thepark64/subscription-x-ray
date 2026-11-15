@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Subscription X-Ray",
@@ -101,7 +102,7 @@ export default function TermsPage() {
           <section>
             <h2>8. Contact</h2>
             <p>
-              Questions about these terms: support@subscriptionxray.jo3.org.
+              Questions about these terms: {SUPPORT_EMAIL}.
             </p>
           </section>
         </div>

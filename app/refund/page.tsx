@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Refund Policy — Subscription X-Ray",
@@ -59,7 +60,7 @@ export default function RefundPage() {
           <section>
             <h2>How to request one</h2>
             <p>
-              Email support@subscriptionxray.jo3.org with your account email and
+              Email {SUPPORT_EMAIL} with your account email and
               the Cashfree payment or order ID. Valid refund requests are
               processed within 5-7 business days back to the original payment
               method.

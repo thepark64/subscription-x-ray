@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Subscription X-Ray",
@@ -81,7 +82,7 @@ export default function PrivacyPage() {
             <h2>5. Data deletion</h2>
             <p>
               You can request deletion of your account and associated scan
-              history at any time by contacting support@subscriptionxray.jo3.org
+              history at any time by contacting {SUPPORT_EMAIL}
               or using the Delete account action in the scanner.
             </p>
           </section>

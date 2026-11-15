@@ -11,6 +11,7 @@ import {
   getEmailConfirmationRedirectUrl,
   getPasswordResetRedirectUrl,
 } from "@/lib/authRedirect";
+import BrandMark from "@/components/BrandMark";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -173,6 +174,7 @@ export default function LoginClient() {
       >
         <Link href="/" className="back">
           <ArrowLeft size={16} aria-hidden="true" />
+          <BrandMark size={22} />
           <span>Subscription X-Ray</span>
         </Link>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Check, Lock, ScanSearch } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import AuthCallbackHandler from "@/components/AuthCallbackHandler";
+import BrandMark from "@/components/BrandMark";
 
 const SAMPLE_CHARGES = [
   { name: "Netflix", amount: "₹649/mo", note: "" },
@@ -21,9 +22,7 @@ export default function Home() {
             className="brand-wordmark"
             aria-label="Subscription X-Ray home"
           >
-            <span className="brand-icon" aria-hidden="true">
-              <ScanSearch size={18} strokeWidth={2.2} />
-            </span>
+            <BrandMark size={32} />
             <span>Subscription X-Ray</span>
           </Link>
 

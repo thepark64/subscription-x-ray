@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
+import BrandMark from "@/components/BrandMark";
 
 type LinkStatus = "checking" | "valid" | "invalid";
 
@@ -121,6 +122,7 @@ export default function ResetPasswordClient() {
       >
         <Link href="/" className="back">
           <ArrowLeft size={16} aria-hidden="true" />
+          <BrandMark size={22} />
           <span>Subscription X-Ray</span>
         </Link>
         <h1>Set a new password</h1>
