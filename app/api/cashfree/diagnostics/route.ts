@@ -5,7 +5,10 @@ import { SITE_URL } from "@/lib/config";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  if (
+    process.env.NODE_ENV !== "development" ||
+    Boolean(process.env.VERCEL)
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

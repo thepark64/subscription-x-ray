@@ -7,7 +7,7 @@ A privacy-first recurring-charge finder built with Next.js 15, React 19, Supabas
 - One-time pack: **₹69 for 12 scans** (fixed on the server).
 - A customer signs up or signs in before scanning or purchasing.
 - CSV parsing happens in the browser. The raw statement is not sent to the application server.
-- A successful scan spends one credit through the atomic `consume_scan_credit()` database function.
+- A successful scan saves its summary and spends one credit atomically through the `save_scan_and_spend_credit()` database function (so a failed save never costs a credit).
 - Scan summaries and detected merchant/amount/frequency results are saved to the signed-in user's account for history.
 - Recognised merchants can show a direct account-management/help link. The app does **not** cancel subscriptions automatically.
 - Payment credits are added either by the signed Cashfree webhook (`/api/webhooks/cashfree`) or by `/api/cashfree/verify`, both of which re-check the order directly with Cashfree's API before crediting. The browser never grants credits on its own.

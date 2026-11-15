@@ -315,6 +315,7 @@ export default function ScannerClient() {
           credits={credits}
           locked={locked}
           spendCredit={spendCredit}
+          onCreditsUpdated={setCredits}
           paywall={
             <PayButton
               currentCredits={credits}

@@ -100,6 +100,13 @@ export function normalizeCustomerPhone(phone?: string): string {
   if (digits.length >= 10) {
     return digits.slice(-10);
   }
+  const envFallback = cleanEnvValue(process.env.CASHFREE_FALLBACK_PHONE).replace(
+    /\D/g,
+    ""
+  );
+  if (envFallback.length >= 10) {
+    return envFallback.slice(-10);
+  }
   return DEFAULT_CUSTOMER_PHONE;
 }
 

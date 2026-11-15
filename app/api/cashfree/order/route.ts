@@ -62,10 +62,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const body = (await req.json().catch(() => ({}))) as { phone?: unknown };
+  const requestedPhone =
+    typeof body?.phone === "string" && body.phone.replace(/\D/g, "").length >= 10
+      ? body.phone
+      : undefined;
+
   const orderId = `xray_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   const origin =
     process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
-    req.headers.get("origin") ||
+    req.headers.get("origin")?.trim().replace(/\/+$/, "") ||
     req.nextUrl.origin;
 
   const fullName =
@@ -73,11 +79,12 @@ export async function POST(req: NextRequest) {
       ? user.user_metadata.full_name
       : undefined;
   const customerPhone =
-    typeof user.phone === "string" && user.phone.trim()
+    requestedPhone ||
+    (typeof user.phone === "string" && user.phone.trim()
       ? user.phone
       : typeof user.user_metadata?.phone === "string"
         ? user.user_metadata.phone
-        : undefined;
+        : undefined);
 
   const payload = buildCashfreeOrderPayload({
     orderId,

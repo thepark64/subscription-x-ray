@@ -18,7 +18,7 @@
 - Users can read only their own rows.
 - The browser cannot update profile credits or insert payment records.
 - `process_payment()` is executable only by `service_role`.
-- `consume_scan_credit()` atomically spends one credit for the authenticated user.
+- `save_scan_and_spend_credit()` (and legacy `consume_scan_credit()`) atomically spends one credit for the authenticated user without risking lost credits on failed scan saves.
 
 ## Data
 - CSV files are read in the browser and are not posted to the server.

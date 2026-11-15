@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { PACK_PRICE_LABEL, PACK_SIZE, SUPPORT_EMAIL } from "@/lib/config";
@@ -45,6 +45,33 @@ export default function PayButton({
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState("");
+  const [phone, setPhone] = useState("");
+  const [hasSavedPhone, setHasSavedPhone] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!active || !session) return;
+      const saved =
+        typeof session.user.phone === "string" && session.user.phone.trim()
+          ? session.user.phone
+          : typeof session.user.user_metadata?.phone === "string"
+            ? session.user.user_metadata.phone
+            : "";
+      const digits = saved.replace(/\D/g, "");
+      if (digits.length >= 10) {
+        setHasSavedPhone(true);
+      } else {
+        setHasSavedPhone(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function waitForCredits(accessToken: string, orderId: string) {
     setWaiting(true);
@@ -143,9 +170,28 @@ export default function PayButton({
         );
       }
 
+      const cleanDigits = phone.replace(/\D/g, "");
+      if (cleanDigits.length > 0 && cleanDigits.length < 10) {
+        throw new Error("Enter a valid 10-digit mobile number, or leave it blank.");
+      }
+      const normalizedPhone =
+        cleanDigits.length >= 10 ? cleanDigits.slice(-10) : undefined;
+      if (normalizedPhone) {
+        await supabase.auth
+          .updateUser({ data: { phone: normalizedPhone } })
+          .catch(() => null);
+        setHasSavedPhone(true);
+      }
+
       const res = await fetch("/api/cashfree/order", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(
+          normalizedPhone ? { phone: normalizedPhone } : {}
+        ),
       });
       const raw = await res.text();
       let order: {
@@ -196,7 +242,20 @@ export default function PayButton({
   }
 
   return (
-    <div>
+    <div className="pay-cta-stack">
+      {!hasSavedPhone && (
+        <input
+          type="tel"
+          inputMode="numeric"
+          className="pay-phone-input"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="10-digit mobile (optional for Cashfree)"
+          aria-label="10-digit mobile number for Cashfree checkout"
+          maxLength={15}
+          disabled={busy || waiting}
+        />
+      )}
       <button
         className="btn btn-primary"
         onClick={pay}

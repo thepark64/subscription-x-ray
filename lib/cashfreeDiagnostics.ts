@@ -43,8 +43,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function maskCredential(value: string): string {
   if (!value) return "(missing)";
-  if (value.length <= 10) return `${"*".repeat(value.length)} (${value.length} chars)`;
-  return `${value.slice(0, 6)}...${value.slice(-4)} (${value.length} chars)`;
+  if (value.length <= 8) return `${"*".repeat(value.length)} (${value.length} chars)`;
+  return `****${value.slice(-4)} (${value.length} chars)`;
 }
 
 function hasWrappingQuotesOrWhitespace(raw: string | undefined): boolean {

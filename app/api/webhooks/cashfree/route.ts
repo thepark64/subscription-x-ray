@@ -121,13 +121,21 @@ export async function POST(req: NextRequest) {
   }
 
   if (paymentCurrency !== "INR" || paymentAmount !== PACK_PRICE_RUPEES) {
-    console.error(
-      `Cashfree payment ${cfPaymentId} rejected: amount/currency mismatch.`
-    );
-    return NextResponse.json({
-      ok: true,
-      message: "Payment does not match the configured scan pack.",
+    console.error("Cashfree webhook payment mismatch:", {
+      orderId,
+      cfPaymentId: String(cfPaymentId),
+      expectedAmount: PACK_PRICE_RUPEES,
+      receivedAmount: paymentAmount,
+      expectedCurrency: "INR",
+      receivedCurrency: paymentCurrency,
     });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Payment amount or currency does not match the configured scan pack.",
+      },
+      { status: 422 }
+    );
   }
 
   // Always verify order directly with Cashfree PG API before crediting.
@@ -168,20 +176,44 @@ export async function POST(req: NextRequest) {
   const userId = order?.order_tags?.user_id;
   const packSize = Number(order?.order_tags?.pack_size);
 
+  if (order?.order_status !== "PAID") {
+    console.error("Cashfree webhook order not yet PAID:", {
+      orderId,
+      cfPaymentId: String(cfPaymentId),
+      orderStatus: order?.order_status ?? null,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Order is not in PAID status yet; retry later.",
+      },
+      { status: 503 }
+    );
+  }
+
   if (
     order?.order_id !== orderId ||
-    order?.order_status !== "PAID" ||
     order?.order_currency !== "INR" ||
     Number(order?.order_amount) !== PACK_PRICE_RUPEES ||
     packSize !== PACK_SIZE ||
     typeof userId !== "string" ||
     !UUID_RE.test(userId)
   ) {
-    console.error(`Cashfree order ${orderId} failed validation.`);
-    return NextResponse.json({
-      ok: true,
-      message: "Order metadata or amount did not match.",
+    console.error("Cashfree webhook order validation mismatch:", {
+      orderId,
+      cfPaymentId: String(cfPaymentId),
+      orderCurrency: order?.order_currency ?? null,
+      orderAmount: order?.order_amount ?? null,
+      packSize,
+      userId: userId ?? null,
     });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Order metadata, currency, or amount did not match.",
+      },
+      { status: 422 }
+    );
   }
 
   const { data: profile, error: profileError } = await admin

@@ -5,17 +5,11 @@ import { motion } from "motion/react";
 import {
   AlertCircle,
   ArrowUpRight,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clock,
   Download,
   FileText,
   Loader2,
   Lock,
-  Pencil,
   Search,
-  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -28,7 +22,6 @@ import { exportSubscriptionsToPdf } from "@/lib/pdfExport";
 import {
   deriveStatementName,
   formatScanTimestamp,
-  formatSubscriptionCountLabel,
   isMissingColumnError,
   normalizeFileName,
   normalizeStatementName,
@@ -46,24 +39,10 @@ import {
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 import { supabase } from "@/lib/supabaseClient";
 import SpendingTrendChart from "@/components/SpendingTrendChart";
-
-type PastScan = {
-  id: string;
-  scanned_at: string;
-  statement_name?: string | null;
-  file_name?: string | null;
-  subscription_count: number;
-  monthly_total: number;
-};
-
-type SavedSubscriptionRow = {
-  id: string;
-  merchant: string;
-  amount: number;
-  frequency: string;
-  occurrences: number;
-  monthly_equivalent: number;
-};
+import ScanHistory, {
+  type PastScan,
+  type SavedSubscriptionRow,
+} from "@/components/ScanHistory";
 
 function normalizeFrequency(freq: string): Frequency {
   if (
@@ -112,12 +91,14 @@ export default function Scanner({
   locked,
   paywall,
   spendCredit,
+  onCreditsUpdated,
 }: {
   userId: string;
   credits?: number;
   locked: boolean;
   paywall: ReactNode;
   spendCredit: () => Promise<boolean>;
+  onCreditsUpdated?: (remaining: number) => void;
 }) {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
@@ -342,12 +323,84 @@ export default function Scanner({
     };
   }, [userId]);
 
-  async function saveScan(data: ScanResult, sourceFilename: string) {
+  function isMissingSaveScanRpc(err: { code?: string; message?: string } | null) {
+    if (!err) return false;
+    const msg = (err.message ?? "").toLowerCase();
+    return (
+      err.code === "PGRST202" ||
+      err.code === "42883" ||
+      msg.includes("save_scan_and_spend_credit")
+    );
+  }
+
+  async function saveScanAndSpendCredit(
+    data: ScanResult,
+    sourceFilename: string
+  ): Promise<boolean> {
     setSaveNotice("");
     const scanName = deriveStatementName(sourceFilename, statementLabel);
     const cleanFileName = normalizeFileName(sourceFilename);
     setActiveScanLabel(scanName);
 
+    const subPayload = data.subscriptions.map((sub) => ({
+      merchant: sub.merchant,
+      amount: sub.amount,
+      frequency: sub.frequency,
+      occurrences: sub.occurrences,
+      monthly_equivalent: sub.monthlyEquivalent,
+    }));
+
+    // Preferred path: single atomic Postgres transaction (saves scan + details + spends 1 credit).
+    const rpcRes = await supabase.rpc("save_scan_and_spend_credit", {
+      p_statement_name: scanName,
+      p_file_name: cleanFileName || null,
+      p_subscription_count: data.subscriptions.length,
+      p_monthly_total: data.monthlyTotal,
+      p_annual_total: data.monthlyTotal * 12,
+      p_subscriptions: subPayload,
+    });
+
+    if (!rpcRes.error && rpcRes.data && typeof rpcRes.data === "object") {
+      const payload = rpcRes.data as {
+        remaining?: number;
+        scan?: PastScan;
+      };
+      if (typeof payload.remaining === "number") {
+        onCreditsUpdated?.(payload.remaining);
+      }
+      if (payload.scan?.id) {
+        writeFallbackLabel(payload.scan.id, scanName);
+        if (cleanFileName) {
+          writeFallbackFileName(payload.scan.id, cleanFileName);
+        }
+        setStatementLabel("");
+        setPastScans((prev) => [
+          {
+            id: payload.scan!.id,
+            scanned_at: payload.scan!.scanned_at,
+            statement_name: payload.scan!.statement_name ?? scanName,
+            file_name: payload.scan!.file_name ?? (cleanFileName || null),
+            subscription_count: data.subscriptions.length,
+            monthly_total: data.monthlyTotal,
+          },
+          ...prev,
+        ]);
+        return true;
+      }
+    }
+
+    if (rpcRes.error && !isMissingSaveScanRpc(rpcRes.error)) {
+      const msg = (rpcRes.error.message ?? "").toLowerCase();
+      setError(
+        msg.includes("no scan credits")
+          ? "You have no scan credits remaining. Buy a pack to continue."
+          : "Could not save your scan or use a scan credit. No credit was deducted — please try again."
+      );
+      return false;
+    }
+
+    // Safe fallback for older schemas without save_scan_and_spend_credit:
+    // Save scan + details FIRST, then deduct 1 credit, rolling back the scan row if deduction fails.
     let insertResult = await supabase
       .from("scans")
       .insert({
@@ -397,35 +450,51 @@ export default function Scanner({
     const { data: scanRow, error: scanError } = insertResult;
 
     if (scanError || !scanRow) {
-      setSaveNotice(
-        "Result shown below, but couldn't be saved to your history."
+      setError(
+        "Could not save your scan to history. No scan credit was used — please try again."
       );
-      return;
+      return false;
+    }
+
+    if (subPayload.length) {
+      const { error: subsError } = await supabase
+        .from("detected_subscriptions")
+        .insert(
+          subPayload.map((sub) => ({
+            scan_id: scanRow.id,
+            user_id: userId,
+            ...sub,
+          }))
+        );
+      if (subsError) {
+        await supabase
+          .from("scans")
+          .delete()
+          .eq("id", scanRow.id)
+          .eq("user_id", userId);
+        setError(
+          "Could not save detected subscriptions to history. No scan credit was used — please try again."
+        );
+        return false;
+      }
+    }
+
+    const spent = await spendCredit();
+    if (!spent) {
+      await supabase
+        .from("scans")
+        .delete()
+        .eq("id", scanRow.id)
+        .eq("user_id", userId);
+      setError(
+        "Couldn't use a scan credit, so this scan wasn't saved. Please refresh the page and try again."
+      );
+      return false;
     }
 
     writeFallbackLabel(scanRow.id, scanName);
     if (cleanFileName) {
       writeFallbackFileName(scanRow.id, cleanFileName);
-    }
-
-    if (data.subscriptions.length) {
-      const { error: subsError } = await supabase
-        .from("detected_subscriptions")
-        .insert(
-          data.subscriptions.map((sub) => ({
-            scan_id: scanRow.id,
-            user_id: userId,
-            merchant: sub.merchant,
-            amount: sub.amount,
-            frequency: sub.frequency,
-            occurrences: sub.occurrences,
-            monthly_equivalent: sub.monthlyEquivalent,
-          }))
-        );
-      if (subsError)
-        setSaveNotice(
-          "Result shown below, but the details couldn't be saved to your history."
-        );
     }
 
     setStatementLabel("");
@@ -440,6 +509,7 @@ export default function Scanner({
       },
       ...prev,
     ]);
+    return true;
   }
 
   async function toggleExpandScan(scanId: string) {
@@ -592,19 +662,15 @@ export default function Scanner({
       const data = analyzeCsv(csvText);
 
       setPhase("saving");
-      const spent = await spendCredit();
-      if (!spent) {
+      const saved = await saveScanAndSpendCredit(data, file.name);
+      if (!saved) {
         setResult(null);
-        setError(
-          "Couldn't use a scan credit. Please refresh the page and try again."
-        );
         return;
       }
 
       setResult(data);
       setSearchQuery("");
       setSelectedCategory("All");
-      await saveScan(data, file.name);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : "Could not read this CSV.");
@@ -1085,244 +1151,15 @@ export default function Scanner({
         </motion.div>
       )}
 
+        </div>
+
+        <aside className="dashboard-sidebar">
           <SpendingTrendChart
             scans={pastScans}
             loading={historyLoading}
             locked={locked}
             onRequestScan={() => fileInputRef.current?.click()}
           />
-        </div>
-
-        <aside className="dashboard-sidebar">
-          <section className="history" aria-labelledby="scan-history-heading">
-            <div className="history-head">
-              <div>
-                <p className="eyebrow">Past activity</p>
-                <h2 id="scan-history-heading">Scan History</h2>
-              </div>
-              {!historyLoading && pastScans.length > 0 && (
-                <span className="history-count-meta">
-                  {pastScans.length}{" "}
-                  {pastScans.length === 1
-                    ? "successful scan"
-                    : "successful scans"}
-                </span>
-              )}
-            </div>
-
-            {historyLoading ? (
-              <div
-                className="glass-panel history-empty is-loading"
-                role="status"
-                aria-live="polite"
-              >
-                <Loader2 size={18} className="spin-icon" aria-hidden="true" />
-                <span>Loading your scan history…</span>
-              </div>
-            ) : pastScans.length === 0 ? (
-              <div className="glass-panel history-empty">
-                <strong>No successful scans yet</strong>
-                <p>
-                  Upload a bank or card CSV statement to detect recurring charges
-                  and build your scan history.
-                </p>
-              </div>
-            ) : (
-              <div className="glass-panel history-list">
-                {pastScans.map((s) => {
-                  const displayName =
-                    s.statement_name?.trim() ||
-                    s.file_name?.trim() ||
-                    "Statement scan";
-                  const fileLabel = s.file_name?.trim() || "";
-                  const isExpanded = expandedScanId === s.id;
-                  const isRenaming = renamingScanId === s.id;
-                  const isRowBusy = historyActionBusyId === s.id;
-                  const details = scanDetails[s.id];
-
-                  return (
-                    <div className="history-item" key={s.id}>
-                      <div className="history-row">
-                        <div className="history-main">
-                          {isRenaming ? (
-                            <form
-                              className="history-rename-form"
-                              onSubmit={(e) => saveScanRename(e, s.id)}
-                            >
-                              <input
-                                type="text"
-                                value={renameDraft}
-                                onChange={(e) => setRenameDraft(e.target.value)}
-                                aria-label="Scan history name"
-                                maxLength={80}
-                                autoFocus
-                                disabled={isRowBusy}
-                              />
-                              <button
-                                type="submit"
-                                className="icon-action-btn"
-                                aria-label="Save scan name"
-                                disabled={isRowBusy || !renameDraft.trim()}
-                              >
-                                <Check size={14} aria-hidden="true" />
-                              </button>
-                              <button
-                                type="button"
-                                className="icon-action-btn"
-                                aria-label="Cancel rename"
-                                onClick={() => setRenamingScanId(null)}
-                                disabled={isRowBusy}
-                              >
-                                <X size={14} aria-hidden="true" />
-                              </button>
-                            </form>
-                          ) : (
-                            <>
-                              <strong className="history-title">
-                                {displayName}
-                              </strong>
-                              <div className="history-meta">
-                                <span className="history-meta-item">
-                                  <Clock size={12} aria-hidden="true" />
-                                  <time dateTime={s.scanned_at}>
-                                    {formatScanTimestamp(s.scanned_at)}
-                                  </time>
-                                </span>
-                                {fileLabel && (
-                                  <span
-                                    className="history-meta-item history-file-name"
-                                    title={`Uploaded file: ${fileLabel}`}
-                                  >
-                                    <FileText size={12} aria-hidden="true" />
-                                    <span>{fileLabel}</span>
-                                  </span>
-                                )}
-                                <span className="history-meta-item">
-                                  {formatSubscriptionCountLabel(
-                                    s.subscription_count
-                                  )}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="history-right">
-                          <span className="history-amount">
-                            ₹
-                            {Number(s.monthly_total).toLocaleString("en-IN", {
-                              maximumFractionDigits: 2,
-                            })}
-                            /mo
-                          </span>
-                          <div className="history-actions">
-                            <button
-                              type="button"
-                              className="icon-action-btn"
-                              aria-label={`Rename ${displayName}`}
-                              title="Rename scan"
-                              onClick={() => {
-                                setRenameDraft(displayName);
-                                setRenamingScanId(s.id);
-                              }}
-                              disabled={isRowBusy}
-                            >
-                              <Pencil size={14} aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              className="icon-action-btn"
-                              aria-expanded={isExpanded}
-                              aria-label={
-                                isExpanded
-                                  ? `Hide charges for ${displayName}`
-                                  : `Review charges for ${displayName}`
-                              }
-                              title={isExpanded ? "Hide details" : "Review scan"}
-                              onClick={() => toggleExpandScan(s.id)}
-                              disabled={isRowBusy}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp size={15} aria-hidden="true" />
-                              ) : (
-                                <ChevronDown size={15} aria-hidden="true" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              className="icon-action-btn is-danger"
-                              aria-label={`Delete ${displayName}`}
-                              title="Delete scan"
-                              onClick={() => deletePastScan(s.id)}
-                              disabled={isRowBusy}
-                            >
-                              <Trash2 size={14} aria-hidden="true" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="history-details">
-                          {loadingDetailsId === s.id ? (
-                            <p className="history-detail-empty">
-                              Loading saved charges…
-                            </p>
-                          ) : details && details.length > 0 ? (
-                            <>
-                              <div className="history-detail-list">
-                                {details.map((item) => (
-                                  <div
-                                    className="history-detail-row"
-                                    key={item.id}
-                                  >
-                                    <div>
-                                      <strong>{item.merchant}</strong>
-                                      <span className="history-detail-meta">
-                                        {item.frequency} · {item.occurrences}{" "}
-                                        charges ·{" "}
-                                        {classifySubscriptionCategory(
-                                          item.merchant
-                                        )}
-                                      </span>
-                                    </div>
-                                    <span className="history-detail-amount">
-                                      ₹
-                                      {Number(
-                                        item.monthly_equivalent
-                                      ).toLocaleString("en-IN", {
-                                        maximumFractionDigits: 2,
-                                      })}
-                                      /mo
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="history-detail-footer">
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-sm"
-                                  onClick={() =>
-                                    openPastScanInViewer(s, details)
-                                  }
-                                >
-                                  Open in results viewer
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <p className="history-detail-empty">
-                              No recurring charges were saved for this scan.
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
 
           <div className="glass-panel rail-privacy-note">
             <div className="rail-privacy-head">
@@ -1336,6 +1173,29 @@ export default function Scanner({
           </div>
         </aside>
       </div>
+
+      <ScanHistory
+        scans={pastScans}
+        loading={historyLoading}
+        locked={locked}
+        expandedScanId={expandedScanId}
+        renamingScanId={renamingScanId}
+        renameDraft={renameDraft}
+        loadingDetailsId={loadingDetailsId}
+        busyScanId={historyActionBusyId}
+        scanDetails={scanDetails}
+        onRenameDraftChange={setRenameDraft}
+        onStartRename={(scanId, currentName) => {
+          setRenameDraft(currentName);
+          setRenamingScanId(scanId);
+        }}
+        onCancelRename={() => setRenamingScanId(null)}
+        onSaveRename={saveScanRename}
+        onToggleExpand={toggleExpandScan}
+        onDeleteScan={deletePastScan}
+        onOpenInViewer={openPastScanInViewer}
+        onRequestScan={() => fileInputRef.current?.click()}
+      />
     </div>
   );
 }

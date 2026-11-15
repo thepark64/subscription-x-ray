@@ -286,3 +286,85 @@ $$;
 
 revoke all on function public.consume_scan_credit() from public, anon;
 grant execute on function public.consume_scan_credit() to authenticated;
+
+-- Saves a scan, inserts its detected subscriptions, and spends one credit in
+-- a single atomic Postgres transaction so a failed save never costs a credit.
+create or replace function public.save_scan_and_spend_credit(
+  p_statement_name text,
+  p_file_name text,
+  p_subscription_count integer,
+  p_monthly_total numeric,
+  p_annual_total numeric,
+  p_subscriptions jsonb default '[]'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_remaining integer;
+  v_scan scans%rowtype;
+begin
+  if v_user is null then
+    raise exception 'Authentication required';
+  end if;
+
+  update profiles
+  set scan_credits = scan_credits - 1
+  where id = v_user and scan_credits > 0
+  returning scan_credits into v_remaining;
+
+  if v_remaining is null then
+    raise exception 'No scan credits remaining';
+  end if;
+
+  insert into scans (
+    user_id,
+    statement_name,
+    file_name,
+    subscription_count,
+    monthly_total,
+    annual_total
+  )
+  values (
+    v_user,
+    nullif(left(trim(coalesce(p_statement_name, '')), 80), ''),
+    nullif(left(trim(coalesce(p_file_name, '')), 120), ''),
+    greatest(0, coalesce(p_subscription_count, 0)),
+    coalesce(p_monthly_total, 0),
+    coalesce(p_annual_total, 0)
+  )
+  returning * into v_scan;
+
+  if jsonb_typeof(p_subscriptions) = 'array' and jsonb_array_length(p_subscriptions) > 0 then
+    insert into detected_subscriptions (
+      scan_id,
+      user_id,
+      merchant,
+      amount,
+      frequency,
+      occurrences,
+      monthly_equivalent
+    )
+    select
+      v_scan.id,
+      v_user,
+      coalesce(item->>'merchant', 'Unknown'),
+      coalesce((item->>'amount')::numeric, 0),
+      coalesce(item->>'frequency', 'monthly'),
+      greatest(1, coalesce((item->>'occurrences')::integer, 1)),
+      coalesce((item->>'monthly_equivalent')::numeric, 0)
+    from jsonb_array_elements(p_subscriptions) as item;
+  end if;
+
+  return jsonb_build_object(
+    'remaining', v_remaining,
+    'scan', to_jsonb(v_scan)
+  );
+end;
+$$;
+
+revoke all on function public.save_scan_and_spend_credit(text, text, integer, numeric, numeric, jsonb) from public, anon;
+grant execute on function public.save_scan_and_spend_credit(text, text, integer, numeric, numeric, jsonb) to authenticated;
