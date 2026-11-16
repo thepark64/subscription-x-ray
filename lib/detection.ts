@@ -24,7 +24,7 @@ export type ScanResult = {
   periodDays: number;
 };
 
-type Tx = { date: Date; merchant: string; amount: number };
+export type Tx = { date: Date; merchant: string; amount: number };
 
 const MAX_ROWS = 100_000;
 
@@ -177,11 +177,11 @@ export function parseDate(value: string): Date | null {
     if (b > 12 && a <= 12) return makeDate(y, a, b); // MM/DD/YYYY
     return makeDate(y, b, a); // DD/MM/YYYY
   }
-  if ((m = s.match(/^(\d{1,2})[ -]([A-Za-z]{3,9})[ ,.-]+(\d{2}|\d{4})$/))) {
+  if ((m = s.match(/^(\d{1,2})[ \-/]([A-Za-z]{3,9})[ ,.'\-/]+(\d{2}|\d{4})$/))) {
     const mon = MONTHS[m[2].toLowerCase().slice(0, 4)] ?? MONTHS[m[2].toLowerCase().slice(0, 3)];
     return mon ? makeDate(+m[3], mon, +m[1]) : null;
   }
-  if ((m = s.match(/^([A-Za-z]{3,9})\.? (\d{1,2}),? (\d{4})$/))) {
+  if ((m = s.match(/^([A-Za-z]{3,9})\.? (\d{1,2}),? (\d{2}|\d{4})$/))) {
     const mon = MONTHS[m[1].toLowerCase().slice(0, 4)] ?? MONTHS[m[1].toLowerCase().slice(0, 3)];
     return mon ? makeDate(+m[3], mon, +m[2]) : null;
   }
@@ -301,14 +301,37 @@ export function analyzeCsv(csv: string): ScanResult {
     })
     .map(({ date, merchant, amount }) => ({ date, merchant, amount }));
 
-  if (!txs.length) throw new Error("No spending transactions were found in this CSV (check the date and amount columns).");
+  if (!txs.length) {
+    throw new Error(
+      "No spending transactions were found in this CSV (check the date and amount columns)."
+    );
+  }
+
+  return detectRecurringSubscriptions(txs);
+}
+
+export function detectRecurringSubscriptions(
+  txs: Tx[],
+  emptyMessage = "No spending transactions were found in this statement."
+): ScanResult {
+  if (!txs.length) {
+    throw new Error(emptyMessage);
+  }
 
   // Group by merchant, collapsing exact same-day duplicates.
   const groups = new Map<string, Tx[]>();
   for (const tx of txs) {
     const key = merchantKey(tx.merchant);
     const list = groups.get(key) ?? [];
-    if (!list.some((x) => x.date.getTime() === tx.date.getTime() && Math.abs(x.amount - tx.amount) < 0.01)) list.push(tx);
+    if (
+      !list.some(
+        (x) =>
+          x.date.getTime() === tx.date.getTime() &&
+          Math.abs(x.amount - tx.amount) < 0.01
+      )
+    ) {
+      list.push(tx);
+    }
     groups.set(key, list);
   }
 
@@ -319,16 +342,24 @@ export function analyzeCsv(csv: string): ScanResult {
     list.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     const gaps: number[] = [];
-    for (let i = 1; i < list.length; i++) gaps.push((list[i].date.getTime() - list[i - 1].date.getTime()) / DAY);
+    for (let i = 1; i < list.length; i++) {
+      gaps.push((list[i].date.getTime() - list[i - 1].date.getTime()) / DAY);
+    }
 
     const amounts = list.map((x) => x.amount);
     const spread = Math.max(...amounts) / Math.min(...amounts);
 
     let best: { cycle: (typeof CYCLES)[number]; share: number } | null = null;
     for (const cycle of CYCLES) {
-      const fits = gaps.filter((g) => Math.abs(g - cycle.days) <= cycle.tolerance).length;
+      const fits = gaps.filter(
+        (g) => Math.abs(g - cycle.days) <= cycle.tolerance
+      ).length;
       const share = fits / gaps.length;
-      if (share >= 0.6 && list.length >= cycle.minOccurrences && spread <= cycle.maxSpread) {
+      if (
+        share >= 0.6 &&
+        list.length >= cycle.minOccurrences &&
+        spread <= cycle.maxSpread
+      ) {
         if (!best || share > best.share) best = { cycle, share };
       }
     }

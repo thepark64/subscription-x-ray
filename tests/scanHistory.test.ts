@@ -16,6 +16,10 @@ describe("scanHistory helpers", () => {
     expect(deriveStatementName("  My   Card Statement.CSV  ")).toBe(
       "My Card Statement"
     );
+    expect(deriveStatementName("icici_statement_2026.pdf")).toBe(
+      "icici statement 2026"
+    );
+    expect(deriveStatementName(".pdf")).toBe("Statement scan");
     expect(deriveStatementName(".csv")).toBe("Statement scan");
   });
 

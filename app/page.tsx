@@ -110,8 +110,8 @@ export default function Home() {
                 <div className="n">02. Local parse</div>
                 <h3>Drop in your statement</h3>
                 <p>
-                  The CSV file is parsed locally in your browser. The raw file
-                  is never sent anywhere.
+                  Your CSV or PDF statement is parsed locally in your browser.
+                  The raw file is never sent anywhere.
                 </p>
               </div>
               <div className="step">
@@ -194,7 +194,7 @@ export default function Home() {
               <div className="faq-item">
                 <h3>Is my statement actually private?</h3>
                 <p>
-                  CSV parsing happens with JavaScript in your browser. The raw
+                  CSV and PDF parsing happen entirely in your browser. The raw
                   file is never sent to a server.
                 </p>
               </div>

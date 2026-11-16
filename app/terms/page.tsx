@@ -36,7 +36,7 @@ export default function TermsPage() {
             <h2>1. What this service is</h2>
             <p>
               Subscription X-Ray (&quot;we&quot;, &quot;the service&quot;) lets
-              you upload a bank or card statement (CSV format) to detect
+              you upload a bank or card statement (CSV or PDF format) to detect
               recurring charges. Analysis runs in your browser; the raw
               statement file is not transmitted to or stored on our servers.
             </p>

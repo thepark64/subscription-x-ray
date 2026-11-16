@@ -12,7 +12,7 @@ export function deriveStatementName(
 
   const base = filename
     .trim()
-    .replace(/\.csv$/i, "")
+    .replace(/\.(csv|pdf)$/i, "")
     .replace(/[_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();

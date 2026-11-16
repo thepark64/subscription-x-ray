@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
   ArrowUpRight,
+  Check,
   Download,
   FileText,
   Loader2,
@@ -14,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { analyzeCsv, type Frequency, type ScanResult } from "@/lib/detection";
+import { analyzePdfFile, PdfPasswordError } from "@/lib/pdfStatement";
 import {
   buildCsvExportFilename,
   subscriptionsToCsv,
@@ -60,8 +62,8 @@ type ScanPhase = "idle" | "reading" | "parsing" | "saving";
 
 const PHASE_COPY: Record<Exclude<ScanPhase, "idle">, { title: string; detail: string }> = {
   reading: {
-    title: "Reading CSV file…",
-    detail: "Loading your statement locally in the browser.",
+    title: "Reading statement file…",
+    detail: "Loading your CSV or PDF locally in the browser.",
   },
   parsing: {
     title: "Detecting recurring charges…",
@@ -73,7 +75,7 @@ const PHASE_COPY: Record<Exclude<ScanPhase, "idle">, { title: string; detail: st
   },
 };
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 function yieldToPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -121,6 +123,9 @@ export default function Scanner({
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [dragging, setDragging] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pdfPassword, setPdfPassword] = useState("");
+  const [pdfPasswordError, setPdfPasswordError] = useState("");
   const [reviewingHistoryAt, setReviewingHistoryAt] = useState<string | null>(
     null
   );
@@ -634,35 +639,74 @@ export default function Scanner({
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, password?: string) {
     if (busy || locked) return;
     setError("");
     setSaveNotice("");
+    setPdfPasswordError("");
     setReviewingHistoryAt(null);
     setFilename(file.name);
 
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setError("Please choose a CSV file.");
+    const lower = file.name.toLowerCase();
+    const isPdf = lower.endsWith(".pdf") || file.type === "application/pdf";
+    const isCsv = lower.endsWith(".csv") || file.type === "text/csv";
+
+    if (!isPdf && !isCsv) {
+      setPendingPdfFile(null);
+      setPdfPassword("");
+      setError("Please choose a CSV or PDF bank/card statement.");
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
+      setPendingPdfFile(null);
+      setPdfPassword("");
       setError(
-        "That file is over 5 MB. Export a shorter date range and try again."
+        "That file is over 10 MB. Export a shorter date range and try again."
       );
       return;
     }
 
+    if (!password) {
+      setPendingPdfFile(null);
+      setPdfPassword("");
+    }
+
     setPhase("reading");
     try {
-      const csvText = await file.text();
-
-      setPhase("parsing");
-      // Yield a frame so the loading indicator paints before synchronous CSV parsing.
       await yieldToPaint();
-      const data = analyzeCsv(csvText);
+      let data: ScanResult;
+
+      if (isPdf) {
+        setPhase("parsing");
+        await yieldToPaint();
+        data = await analyzePdfFile(file, password);
+      } else {
+        const csvText = await file.text();
+        setPhase("parsing");
+        await yieldToPaint();
+        data = analyzeCsv(csvText);
+      }
+
+      setPendingPdfFile(null);
+      setPdfPassword("");
+      setPdfPasswordError("");
 
       setPhase("saving");
-      const saved = await saveScanAndSpendCredit(data, file.name);
+      const saveTimeout = new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                "Saving took too long. Check your connection and try again — no scan credit was lost."
+              )
+            ),
+          25_000
+        )
+      );
+      const saved = await Promise.race([
+        saveScanAndSpendCredit(data, file.name),
+        saveTimeout,
+      ]);
       if (!saved) {
         setResult(null);
         return;
@@ -673,10 +717,33 @@ export default function Scanner({
       setSelectedCategory("All");
     } catch (e) {
       setResult(null);
-      setError(e instanceof Error ? e.message : "Could not read this CSV.");
+      if (e instanceof PdfPasswordError) {
+        setPendingPdfFile(file);
+        setPdfPasswordError(e.reason === "incorrect" ? e.message : "");
+        return;
+      }
+      setPendingPdfFile(null);
+      setPdfPassword("");
+      setError(
+        e instanceof Error
+          ? e.message
+          : isPdf
+            ? "Could not read this PDF statement."
+            : "Could not read this CSV."
+      );
     } finally {
       setPhase("idle");
     }
+  }
+
+  function handlePdfPasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!pendingPdfFile || busy) return;
+    if (!pdfPassword.trim()) {
+      setPdfPasswordError("Enter the PDF password to unlock this statement.");
+      return;
+    }
+    void handleFile(pendingPdfFile, pdfPassword);
   }
 
   function onInput(event: React.ChangeEvent<HTMLInputElement>) {
@@ -721,8 +788,9 @@ export default function Scanner({
           <p className="eyebrow">Overview</p>
           <h1>Statement scan</h1>
           <p className="lede">
-            Find the recurring charges hiding in your CSV. Your raw file stays on
-            this device — only detected summaries are saved to your account.
+            Find the recurring charges hiding in your CSV or PDF statement. Your
+            raw file stays on this device — only detected summaries are saved to
+            your account.
           </p>
         </div>
         {!locked && (
@@ -735,10 +803,10 @@ export default function Scanner({
             ) : (
               <Upload size={16} aria-hidden="true" />
             )}
-            <span>{busy ? "Scanning…" : "Choose CSV"}</span>
+            <span>{busy ? "Scanning…" : "Choose CSV / PDF"}</span>
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.pdf,application/pdf"
               onChange={onInput}
               disabled={busy}
             />
@@ -816,29 +884,123 @@ export default function Scanner({
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
+              onClick={(event) => {
+                if (busy || locked) return;
+                const target = event.target as HTMLElement;
+                if (
+                  target.closest("input, button, label, a")
+                ) {
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
             >
-              <div
-                className={`dropzone-icon${busy ? " is-busy" : ""}`}
+              <div className="dropzone-reticle" aria-hidden="true">
+                <span className="reticle-corner is-tl" />
+                <span className="reticle-corner is-tr" />
+                <span className="reticle-corner is-bl" />
+                <span className="reticle-corner is-br" />
+              </div>
+
+              {(dragging || busy) && (
+                <motion.div
+                  className="dropzone-scan-beam"
+                  aria-hidden="true"
+                  initial={{ opacity: 0, y: "-10%" }}
+                  animate={{
+                    opacity: [0.35, 0.95, 0.35],
+                    y: ["0%", "260%", "0%"],
+                  }}
+                  transition={{
+                    duration: busy ? 1.5 : 1.9,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              )}
+
+              <motion.div
+                className={`dropzone-icon${busy ? " is-busy" : ""}${dragging ? " is-dragging" : ""}`}
                 aria-hidden="true"
+                animate={
+                  busy
+                    ? { scale: [1, 1.06, 1] }
+                    : dragging
+                      ? { y: -4, scale: 1.08 }
+                      : { y: [0, -3, 0] }
+                }
+                transition={
+                  busy || !dragging
+                    ? { duration: busy ? 1.1 : 2.8, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 0.16, ease: [0.16, 1, 0.3, 1] }
+                }
               >
                 {busy ? (
                   <Loader2 size={22} className="spin-icon" />
                 ) : (
                   <Upload size={22} />
                 )}
-              </div>
-              <h2>
-                {busy
-                  ? phaseInfo?.title
-                  : dragging
-                    ? "Release to scan statement"
-                    : "Drop your statement here"}
-              </h2>
-              <p>
-                {busy
-                  ? phaseInfo?.detail
-                  : "CSV files with date, description/narration and amount (or debit) columns work best."}
-              </p>
+              </motion.div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={busy ? phase : dragging ? "dragging" : "idle"}
+                  className="dropzone-copy"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <h2>
+                    {busy
+                      ? phaseInfo?.title
+                      : dragging
+                        ? "Release to scan statement"
+                        : "Drop your statement here"}
+                  </h2>
+                  <p>
+                    {busy
+                      ? phaseInfo?.detail
+                      : "Supports CSV and digital bank/card PDFs. Password-protected PDFs are unlocked locally in your browser."}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              {busy && (
+                <div className="dropzone-steps" aria-hidden="true">
+                  {(
+                    [
+                      { id: "reading", label: "Read file" },
+                      { id: "parsing", label: "Detect charges" },
+                      { id: "saving", label: "Save summary" },
+                    ] as const
+                  ).map((step, index) => {
+                    const phaseOrder = {
+                      idle: -1,
+                      reading: 0,
+                      parsing: 1,
+                      saving: 2,
+                    } as const;
+                    const currentIdx = phaseOrder[phase];
+                    const isDone = currentIdx > index;
+                    const isActive = currentIdx === index;
+                    return (
+                      <span
+                        key={step.id}
+                        className={`dropzone-step${isActive ? " is-active" : ""}${isDone ? " is-done" : ""}`}
+                      >
+                        {isDone ? (
+                          <Check size={12} aria-hidden="true" />
+                        ) : (
+                          <span className="dropzone-step-num">{index + 1}.</span>
+                        )}
+                        <span>{step.label}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="dropzone-controls">
                 <input
                   type="text"
@@ -854,12 +1016,14 @@ export default function Scanner({
                   {busy && (
                     <Loader2 size={16} className="spin-icon" aria-hidden="true" />
                   )}
-                  <span>{busy ? "Processing CSV…" : "Select statement"}</span>
+                  <span>
+                    {busy ? "Processing statement…" : "Select CSV or PDF"}
+                  </span>
                   <input
                     ref={fileInputRef}
                     className="hidden-input"
                     type="file"
-                    accept=".csv,text/csv"
+                    accept=".csv,text/csv,.pdf,application/pdf"
                     onChange={onInput}
                     disabled={busy}
                   />
@@ -867,6 +1031,57 @@ export default function Scanner({
               </div>
               {filename && <div className="file-name">Loaded: {filename}</div>}
             </div>
+          )}
+
+          {pendingPdfFile && !busy && (
+            <form
+              className="glass-panel pdf-password-card"
+              onSubmit={handlePdfPasswordSubmit}
+            >
+              <div className="pdf-password-head">
+                <Lock size={16} aria-hidden="true" />
+                <div>
+                  <strong>Password-protected PDF</strong>
+                  <span>
+                    Enter the password for {pendingPdfFile.name} to unlock and
+                    scan it locally on your device.
+                  </span>
+                </div>
+              </div>
+              <div className="pdf-password-row">
+                <input
+                  type="password"
+                  value={pdfPassword}
+                  onChange={(e) => {
+                    setPdfPassword(e.target.value);
+                    if (pdfPasswordError) setPdfPasswordError("");
+                  }}
+                  placeholder="Enter PDF password"
+                  aria-label="PDF statement password"
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Unlock &amp; scan
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setPendingPdfFile(null);
+                    setPdfPassword("");
+                    setPdfPasswordError("");
+                    setFilename("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+              {pdfPasswordError && (
+                <p className="pdf-password-error" role="alert">
+                  {pdfPasswordError}
+                </p>
+              )}
+            </form>
           )}
 
           {busy && phaseInfo && (
@@ -1134,8 +1349,8 @@ export default function Scanner({
             </>
           ) : (
             <div className="glass-panel empty-state">
-              No recurring charges were confidently detected. Try a CSV with
-              multiple months of transactions.
+              No recurring charges were confidently detected. Try a CSV or PDF
+              statement covering multiple months of transactions.
             </div>
           )}
 
@@ -1164,10 +1379,10 @@ export default function Scanner({
           <div className="glass-panel rail-privacy-note">
             <div className="rail-privacy-head">
               <Lock size={14} aria-hidden="true" />
-              <strong>Browser-only CSV parsing</strong>
+              <strong>Browser-only statement parsing</strong>
             </div>
             <p>
-              Raw bank or card statements never leave your device. Only detected
+              Raw CSV and PDF statements never leave your device. Only detected
               merchant totals are stored for your scan history.
             </p>
           </div>
