@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     title: "Subscription X-Ray",
     description: "Find recurring charges in your bank or card statement.",
   },
+  verification: {
+    google: "lN8dgPoNm_qnJNyMdtCZ-paNz2XToPhWJpec5qVXbyA",
+  },
 };
 
 export default function RootLayout({
