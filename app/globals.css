@@ -765,7 +765,9 @@ footer {
   background: var(--glass-bg-subtle);
   color: var(--ink);
   font-size: 13.5px;
-  min-width: 160px;
+  flex: 1 1 120px;
+  min-width: 0;
+  max-width: 240px;
 }
 
 .name-edit-form input:focus,
@@ -1623,7 +1625,7 @@ footer {
 .subscription {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--glass-divider);
@@ -1638,12 +1640,69 @@ footer {
   background: var(--glass-bg-subtle);
 }
 
+.subscription-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.subscription-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.sub-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  border: 1px solid var(--glass-divider);
+  background: var(--glass-bg-subtle);
+  color: var(--muted);
+}
+
+.sub-conf.is-high {
+  color: var(--teal);
+  border-color: rgba(13, 148, 136, 0.28);
+  background: rgba(13, 148, 136, 0.08);
+}
+
+.sub-conf.is-medium {
+  color: var(--ink);
+  border-color: var(--glass-edge);
+}
+
+.sub-conf.is-possible {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.sub-rail.is-upi_autopay,
+.sub-rail.is-nach_emandate {
+  color: var(--accent);
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.07);
+}
+
 .subscription-meta {
   display: block;
   color: var(--muted);
   font-size: 13px;
-  margin-top: 3px;
+  margin-top: 4px;
   font-variant-numeric: tabular-nums;
+}
+
+.subscription-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 8px;
 }
 
 .subscription-price {
@@ -1666,12 +1725,72 @@ footer {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 6px;
   color: var(--teal);
   font-size: 13px;
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.guide-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-divider);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 140ms var(--ease-out), border-color 140ms var(--ease-out),
+    background-color 140ms var(--ease-out);
+}
+
+.guide-toggle-btn:hover {
+  color: var(--ink);
+  border-color: var(--glass-edge);
+  background: var(--glass-bg-subtle);
+}
+
+.cancel-guide-box {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--glass-divider);
+  background: var(--glass-bg-subtle);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.cancel-guide-title {
+  display: block;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}
+
+.cancel-guide-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+  line-height: 1.5;
+}
+
+.cancel-guide-apps {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--glass-divider);
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cancel-guide-app strong {
+  color: var(--ink);
 }
 
 .empty-state,
@@ -2470,6 +2589,311 @@ footer {
   .plan,
   .hero-card {
     padding: 24px;
+  }
+}
+
+/* Interactive Demo */
+.demo-shell {
+  padding: 24px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.demo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.demo-top h3 {
+  margin: 8px 0 4px;
+  font-size: 20px;
+}
+
+.demo-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--teal);
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+}
+
+.demo-preset-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--glass-divider);
+  border-radius: var(--radius-inner);
+  background: var(--glass-bg-subtle);
+  overflow: hidden;
+}
+
+.demo-kpi {
+  padding: 14px 16px;
+  border-right: 1px solid var(--glass-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-kpi:last-child {
+  border-right: none;
+}
+
+.demo-kpi span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.demo-kpi strong {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+}
+
+.demo-noise-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-noise-note {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--glass-divider);
+  background: var(--glass-bg-subtle);
+}
+
+.demo-list {
+  border: 1px solid var(--glass-divider);
+  border-radius: var(--radius-inner);
+  background: var(--glass-bg-subtle);
+}
+
+.demo-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.demo-footer p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .demo-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .demo-kpi:nth-child(2) {
+    border-right: none;
+  }
+
+  .demo-kpi:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--glass-divider);
+  }
+}
+
+@media (max-width: 480px) {
+  .demo-shell {
+    padding: 18px 16px;
+  }
+
+  .dropzone {
+    padding: 24px 16px;
+  }
+
+  .dropzone-controls .statement-name-input {
+    max-width: 100%;
+  }
+
+  .subscription {
+    padding: 14px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pay-cta-stack {
+    max-width: 100%;
+  }
+
+  .scanner-account {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .account-meta {
+    word-break: break-word;
+  }
+}
+
+/* Phase 4: Savings Checklist & Privacy-Safe Share Card */
+.subscription-check-col {
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.savings-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.subscription.is-marked {
+  background: rgba(13, 148, 136, 0.06);
+}
+
+.sub-marked {
+  color: var(--teal);
+  border-color: rgba(13, 148, 136, 0.32);
+  background: rgba(13, 148, 136, 0.1);
+}
+
+.savings-share-card {
+  margin-top: 20px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.savings-share-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.savings-share-top h3 {
+  margin: 4px 0 4px;
+  font-size: 18px;
+}
+
+.savings-share-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.savings-share-metrics {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.savings-kpi {
+  min-width: 165px;
+  padding: 12px 16px;
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--glass-divider);
+  background: var(--glass-bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.savings-kpi span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.savings-kpi strong {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.savings-kpi strong.is-teal {
+  color: var(--teal);
+}
+
+.savings-kpi strong small {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.savings-share-footer {
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.savings-privacy-pill {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--muted);
+  max-width: 52ch;
+  line-height: 1.45;
+}
+
+.savings-privacy-pill svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--teal);
+}
+
+.savings-share-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .savings-share-card {
+    padding: 18px 16px;
+  }
+
+  .savings-share-metrics {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .savings-kpi {
+    min-width: 0;
   }
 }
 

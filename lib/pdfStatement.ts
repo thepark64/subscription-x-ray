@@ -2,6 +2,7 @@ import {
   detectRecurringSubscriptions,
   parseAmount,
   parseDate,
+  parseTypeIndicator,
   type ScanResult,
   type Tx,
 } from "@/lib/detection";
@@ -53,6 +54,7 @@ type ColumnAnchor = {
 type ColumnLayout = {
   date?: ColumnAnchor;
   desc?: ColumnAnchor;
+  ref?: ColumnAnchor;
   debit?: ColumnAnchor;
   credit?: ColumnAnchor;
   amount?: ColumnAnchor;
@@ -88,7 +90,7 @@ const DATE_PREFIX_PATTERNS: RegExp[] = [
 ];
 
 const CHROME_LINE_RE =
-  /^(page\s+\d+(?:\s*(?:of|\/)\s*\d+)?\s*$|statement\s+(?:of\s+account|summary|period)\b|account\s+(?:no|number|name|type|summary)\b|branch\s*:|ifsc\s*:|micr\s*:|opening\s+balance\b|closing\s+balance\b|brought\s+forward\b|carried\s+forward\b|available\s+balance\b|credit\s+limit\b|minimum\s+amount\s+due\b|payment\s+due\s+date\b|total\s+(?:debits?|credits?|amount|withdrawals?|deposits?)\b|grand\s+total\b|generated\s+on\b|\*{2,}\s*end\s+of\s+statement\b|this\s+is\s+a\s+computer\s+generated\b|customer\s+care\b|toll\s+free\b|registered\s+office\b)/i;
+  /^(page\s+\d+(?:\s*(?:of|\/)\s*\d+)?\s*$|statement\s+(?:of\s+account|summary|period)\b|account\s+(?:no|number|name|type|summary|branch|status)\b|branch\s*:|ifsc\s*:|micr\s*:|ckyc\s*:|nominee\s*:|opening\s+balance\b|closing\s+balance\b|brought\s+forward\b|carried\s+forward\b|available\s+balance\b|credit\s+limit\b|minimum\s+amount\s+due\b|payment\s+due\s+date\b|total\s+(?:debits?|credits?|amount|withdrawals?|deposits?)\b|grand\s+total\b|generated\s+on\b|\*{2,}\s*(?:end|continued|continue)\b|this\s+is\s+a\s+computer\s+generated\b|customer\s+care\b|toll\s+free\b|registered\s+office\b)/i;
 
 function estimateWidth(text: string): number {
   return Math.max(4, text.length * 4.5);
@@ -180,36 +182,43 @@ function detectHeaderLayout(cells: RowCell[]): ColumnLayout | null {
       center: cell.center,
     };
 
-    if (/^(txn|transaction|tran|posting|post)?\s*date$/.test(h) && !layout.date) {
+    if (/^(txn|transaction|tran|posting|post)?\s*(date|dt)$/.test(h) && !layout.date) {
       layout.date = anchor;
       hits++;
     } else if (
-      /\b(narration|description|particulars|merchant|payee|remarks|details)\b/.test(
+      /\b(narration|description|particulars|merchant|payee|remarks|details|memo)\b/.test(
         h
       ) &&
       !layout.desc
     ) {
       layout.desc = anchor;
       hits++;
+    } else if (/\b(chq|cheque|ref|reference|utr|rrn)\b/.test(h) && !layout.ref) {
+      layout.ref = anchor;
+      hits++;
     } else if (
-      /\b(debit|withdrawal|withdrawals|withdrawn|paid out|money out)\b/.test(
+      /^(dr cr|cr dr|debit credit|credit debit|type)(\s+(indicator|flag|type))?$/.test(h)
+    ) {
+      layout.type = anchor;
+      hits++;
+    } else if (
+      (/\b(debit|withdrawal|withdrawals|withdrawn|paid out|money out|debited)\b/.test(
         h
-      ) ||
+      ) &&
+        !/\b(credit|cr)\b/.test(h)) ||
       /^dr(\s+amt|\s+amount)?$/.test(h)
     ) {
       layout.debit = anchor;
       hits++;
     } else if (
-      /\b(credit|deposit|deposits|paid in|money in)\b/.test(h) ||
+      (/\b(credit|deposit|deposits|paid in|money in|credited)\b/.test(h) &&
+        !/\b(debit|dr)\b/.test(h)) ||
       /^cr(\s+amt|\s+amount)?$/.test(h)
     ) {
       layout.credit = anchor;
       hits++;
     } else if (/\b(balance|closing bal)\b/.test(h)) {
       layout.balance = anchor;
-      hits++;
-    } else if (/^(dr cr|cr dr|type)$/.test(h)) {
-      layout.type = anchor;
       hits++;
     } else if (/\bamount\b|^amt$/.test(h) && !/balance/.test(h)) {
       layout.amount = anchor;
@@ -271,8 +280,25 @@ function isStandaloneMoneyString(
   return true;
 }
 
+function isNearRefColumn(cell: RowCell, layout: ColumnLayout | null): boolean {
+  if (!layout?.ref) return false;
+  return (
+    Math.abs(cell.center - layout.ref.center) <= 40 ||
+    Math.abs(cell.x - layout.ref.x) <= 30
+  );
+}
+
+function isNearTypeColumn(cell: RowCell, layout: ColumnLayout | null): boolean {
+  if (!layout?.type) return false;
+  return (
+    Math.abs(cell.center - layout.type.center) <= 35 ||
+    Math.abs(cell.x - layout.type.x) <= 25
+  );
+}
+
 function isNearNumericColumn(cell: RowCell, layout: ColumnLayout | null): boolean {
   if (!layout) return false;
+  if (isNearRefColumn(cell, layout)) return false;
   const cols = [layout.debit, layout.credit, layout.amount, layout.balance].filter(
     (c): c is ColumnAnchor => Boolean(c)
   );
@@ -603,12 +629,17 @@ export function analyzePdfPages(pages: PdfTextPage[]): ScanResult {
             }
           }
 
-          if (/^(cr|credit)$/i.test(cell.text.trim())) {
-            nextBlock.explicitMarker = "credit";
+          const typeFlag = isNearTypeColumn(cell, activeLayout)
+            ? parseTypeIndicator(cell.text)
+            : /^(cr|credit|dr|debit)$/i.test(cell.text.trim())
+              ? parseTypeIndicator(cell.text)
+              : null;
+          if (typeFlag) {
+            nextBlock.explicitMarker = typeFlag;
             continue;
           }
-          if (/^(dr|debit)$/i.test(cell.text.trim())) {
-            nextBlock.explicitMarker = "debit";
+
+          if (isNearRefColumn(cell, activeLayout)) {
             continue;
           }
 
@@ -643,12 +674,17 @@ export function analyzePdfPages(pages: PdfTextPage[]): ScanResult {
       // Continuation row on the same page for multi-line wrapped descriptions.
       if (currentBlock && !looksLikeFooterContinuation(row.text)) {
         for (const cell of row.cells) {
-          if (/^(cr|credit)$/i.test(cell.text.trim())) {
-            currentBlock.explicitMarker = "credit";
+          const typeFlag = isNearTypeColumn(cell, activeLayout)
+            ? parseTypeIndicator(cell.text)
+            : /^(cr|credit|dr|debit)$/i.test(cell.text.trim())
+              ? parseTypeIndicator(cell.text)
+              : null;
+          if (typeFlag) {
+            currentBlock.explicitMarker = typeFlag;
             continue;
           }
-          if (/^(dr|debit)$/i.test(cell.text.trim())) {
-            currentBlock.explicitMarker = "debit";
+
+          if (isNearRefColumn(cell, activeLayout)) {
             continue;
           }
 

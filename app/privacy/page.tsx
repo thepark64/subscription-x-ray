@@ -5,6 +5,11 @@ import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Subscription X-Ray",
+  description:
+    "How Subscription X-Ray processes CSV and PDF statements locally in your browser without uploading raw files or PDF passwords.",
+  alternates: {
+    canonical: "/privacy",
+  },
 };
 
 export default function PrivacyPage() {
@@ -17,81 +22,76 @@ export default function PrivacyPage() {
             <span>Subscription X-Ray</span>
           </Link>
           <h1>Privacy Policy</h1>
-          <p className="legal-updated">
-            Last updated:{" "}
-            {new Date().toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-
-          <div className="legal-disclaimer">
-            This is a plain-language starting draft, not legal advice. Have it
-            reviewed before relying on it for a live product, particularly given
-            it touches financial data.
-          </div>
+          <p className="legal-updated">Last updated: 18 November 2026</p>
 
           <section>
-            <h2>1. What we don&apos;t collect</h2>
+            <h2>1. What we never upload or collect</h2>
             <p>
-              Your raw bank/card statement file is never uploaded to our
-              servers. Parsing and detection happen entirely in your browser
-              using JavaScript. We have no access to the file itself at any
-              point.
+              Your raw bank or card CSV or PDF statement — and any password you
+              enter to unlock an encrypted PDF — is processed strictly inside
+              your browser memory. Raw statement bytes, full transaction
+              ledgers, account balances, and PDF passwords are never uploaded to
+              or stored on our servers.
             </p>
           </section>
 
           <section>
-            <h2>2. What we do store</h2>
+            <h2>2. What we store in your account</h2>
             <ul>
               <li>
-                Your email address and account credentials (via Supabase Auth)
+                Your email address, optional display name, and authentication
+                metadata (via Supabase Auth)
               </li>
               <li>
-                The <em>results</em> of each completed scan — merchant names,
-                amounts, and frequencies of detected recurring charges — not the
-                original statement
+                Completed scan summaries: scan timestamp, your optional scan
+                label and uploaded filename, and detected recurring items
+                (merchant name, average charge amount, billing frequency,
+                occurrences, monthly equivalent, and optional confidence or
+                payment rail classification when supported by statement text)
               </li>
               <li>
-                Payment records (amount, payment ID, timestamp) — not your card
-                or UPI details, which Cashfree Payments handles directly
+                Payment records (amount, Cashfree order/payment ID, status, and
+                timestamp) — card numbers and UPI PINs/credentials are handled
+                directly by Cashfree Payments
               </li>
               <li>Your remaining scan credit balance</li>
             </ul>
           </section>
 
           <section>
-            <h2>3. How we use it</h2>
+            <h2>3. How we use stored data</h2>
             <p>
-              Solely to operate the service: authenticating you, tracking scan
-              credits, showing your scan history, and processing payments.
+              Solely to operate Subscription X-Ray: authenticating your account,
+              enforcing scan credit balances, displaying your scan history and
+              6-month recurring spend trend, and verifying Cashfree payments.
             </p>
           </section>
 
           <section>
-            <h2>4. Third parties</h2>
+            <h2>4. Third-party processors</h2>
             <p>
-              We use Supabase for authentication and database hosting, and
-              Cashfree Payments for payment processing. Each has its own privacy
-              policy governing data they process on our behalf.
+              We use Supabase for authentication and encrypted PostgreSQL
+              storage, Cashfree Payments for ₹69 pack checkout verification, and
+              Vercel for hosting and privacy-friendly web analytics. Each
+              provider processes data under its own privacy policy solely to
+              deliver these functions.
             </p>
           </section>
 
           <section>
             <h2>5. Data deletion</h2>
             <p>
-              You can request deletion of your account and associated scan
-              history at any time by contacting {SUPPORT_EMAIL}
-              or using the Delete account action in the scanner.
+              You can delete individual saved scans at any time, or permanently
+              delete your account and associated scan history directly inside
+              the scanner via Delete account or by emailing {SUPPORT_EMAIL}.
             </p>
           </section>
 
           <section>
-            <h2>6. Changes</h2>
+            <h2>6. Updates</h2>
             <p>
-              We may update this policy from time to time; material changes will
-              be reflected here with an updated date.
+              Material updates to this policy will be posted on this page with a
+              revised update date.
             </p>
           </section>
         </div>

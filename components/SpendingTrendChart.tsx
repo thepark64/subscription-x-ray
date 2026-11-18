@@ -464,8 +464,8 @@ export default function SpendingTrendChart({
           <div>
             <h3>No monthly trend data yet</h3>
             <p>
-              Scan a bank or card CSV statement to plot your monthly recurring
-              subscription spend across the last 6 months.
+              Scan a bank or card CSV or PDF statement to plot your monthly
+              recurring subscription spend across the last 6 months.
             </p>
           </div>
           {onRequestScan && !locked && (
@@ -475,7 +475,7 @@ export default function SpendingTrendChart({
               onClick={onRequestScan}
             >
               <Upload size={15} aria-hidden="true" />
-              <span>Choose CSV</span>
+              <span>Choose CSV / PDF</span>
             </button>
           )}
         </div>

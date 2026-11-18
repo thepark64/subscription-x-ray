@@ -1,4 +1,8 @@
-import type { Subscription } from "@/lib/detection";
+import {
+  formatConfidenceLabel,
+  formatPaymentRailLabel,
+  type Subscription,
+} from "@/lib/detection";
 import { getSubscriptionCategory } from "@/lib/subscriptionFilter";
 
 const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
@@ -27,6 +31,8 @@ export function subscriptionsToCsv(subscriptions: Subscription[]): string {
     "Charge Amount (INR)",
     "Monthly Equivalent (INR)",
     "Annual Projection (INR)",
+    "Confidence",
+    "Payment Rail",
     "Manage URL",
   ];
 
@@ -38,6 +44,8 @@ export function subscriptionsToCsv(subscriptions: Subscription[]): string {
     escapeCsvCell(sub.amount.toFixed(2), false),
     escapeCsvCell(sub.monthlyEquivalent.toFixed(2), false),
     escapeCsvCell((sub.monthlyEquivalent * 12).toFixed(2), false),
+    escapeCsvCell(formatConfidenceLabel(sub.confidence) ?? "", true),
+    escapeCsvCell(formatPaymentRailLabel(sub.paymentRail) ?? "", true),
     escapeCsvCell(sub.service?.url ?? "", true),
   ]);
 
@@ -51,7 +59,7 @@ export function buildCsvExportFilename(
 ): string {
   const dateStamp = now.toISOString().slice(0, 10);
   const slug = (sourceName ?? "")
-    .replace(/\.csv$/i, "")
+    .replace(/\.(csv|pdf)$/i, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")

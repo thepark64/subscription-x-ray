@@ -7,6 +7,15 @@ import {
 
 export type Frequency = "weekly" | "monthly" | "quarterly" | "annual";
 
+export type PaymentRail =
+  | "upi_autopay"
+  | "nach_emandate"
+  | "card_si"
+  | "upi"
+  | "unknown";
+
+export type ConfidenceLevel = "high" | "medium" | "possible";
+
 export type Subscription = {
   merchant: string;
   amount: number;
@@ -15,6 +24,9 @@ export type Subscription = {
   monthlyEquivalent: number;
   category: ServiceCategory;
   service?: Pick<KnownService, "name" | "url" | "label" | "category">;
+  paymentRail?: PaymentRail;
+  confidence?: ConfidenceLevel;
+  detectionReason?: string;
 };
 
 export type ScanResult = {
@@ -111,10 +123,10 @@ type Columns = {
   type: number;
 };
 
-function pickColumn(headers: string[], tests: RegExp[]): number {
+function pickColumn(headers: string[], tests: RegExp[], exclude = -1): number {
   // Earlier patterns win, so "transaction date" beats "value date".
   for (const re of tests) {
-    const i = headers.findIndex((h) => re.test(h));
+    const i = headers.findIndex((h, idx) => idx !== exclude && re.test(h));
     if (i >= 0) return i;
   }
   return -1;
@@ -122,17 +134,50 @@ function pickColumn(headers: string[], tests: RegExp[]): number {
 
 function mapColumns(rawHeaders: string[]): Columns {
   const h = rawHeaders.map(norm);
-  const date = pickColumn(h, [/^(transaction|txn|tran|posting|trans) date$/, /^date$/, /\bdate\b(?!.*value)/, /\bdate\b/]);
+  const date = pickColumn(h, [
+    /^(transaction|txn|tran|posting|trans|post) (date|dt)$/,
+    /^(date|dt)$/,
+    /\b(date|dt)\b(?!.*value)/,
+    /\b(date|dt)\b/,
+  ]);
   const desc = pickColumn(h, [
     /\b(narration|description|merchant|particulars|payee)\b/,
-    /\b(transaction )?(remarks|details)\b/,
+    /\b(transaction |txn |tran )?(remarks|details)\b/,
+    /\bmemo\b/,
     /^name$/,
   ]);
-  const debit = pickColumn(h, [/\b(debit|withdrawal|withdrawals|withdrawn|paid out|money out)\b/, /^dr( amt| amount)?$/]);
-  const credit = pickColumn(h, [/\b(credit|deposit|deposits|paid in|money in)\b/, /^cr( amt| amount)?$/]);
-  const amountCandidates = h.map((x, i) => (/\bamount\b|^amt$/.test(x) && !/balance/.test(x) && i !== debit && i !== credit ? i : -1));
+  // Detect combined Dr/Cr or Debit/Credit indicator columns BEFORE matching debit/credit amount columns.
+  const type = pickColumn(h, [
+    /^(transaction |txn |tran )?type$/,
+    /^(dr cr|cr dr|debit credit|credit debit)(\s+(indicator|flag|type))?$/,
+    /\b(dr cr|cr dr|debit credit|credit debit)\b/,
+  ]);
+  const debit = pickColumn(
+    h,
+    [
+      /^(?!.*\b(credit|cr)\b).*\b(debit|withdrawal|withdrawals|withdrawn|paid out|money out|debited|outflow)\b/,
+      /^dr(\s+amt|\s+amount)?$/,
+    ],
+    type
+  );
+  const credit = pickColumn(
+    h,
+    [
+      /^(?!.*\b(debit|dr)\b).*\b(credit|deposit|deposits|paid in|money in|credited|inflow)\b/,
+      /^cr(\s+amt|\s+amount)?$/,
+    ],
+    type
+  );
+  const amountCandidates = h.map((x, i) =>
+    (/\bamount\b|^amt$/.test(x) &&
+      !/balance/.test(x) &&
+      i !== debit &&
+      i !== credit &&
+      i !== type
+      ? i
+      : -1)
+  );
   const amount = amountCandidates.find((i) => i >= 0) ?? -1;
-  const type = pickColumn(h, [/^(transaction )?type$/, /^dr cr$/, /^cr dr$/, /\bdr cr\b/]);
   return { date, desc, debit, credit, amount, type };
 }
 
@@ -194,10 +239,13 @@ type ParsedAmount = { value: number; marker: "debit" | "credit" | null };
 export function parseAmount(raw: string): ParsedAmount | null {
   let s = raw.trim();
   if (!s) return null;
+  s = s.replace(/\/-\s*$/, "").trim();
   let marker: ParsedAmount["marker"] = null;
-  if (/cr\.?$/i.test(s)) marker = "credit";
-  else if (/dr\.?$/i.test(s)) marker = "debit";
-  s = s.replace(/(cr|dr)\.?$/i, "");
+  if (/(?:\bcr\.?|\dcr\.?|\(cr\.?\))$/i.test(s) || /^\(?cr\.?\)?\s+/i.test(s)) marker = "credit";
+  else if (/(?:\bdr\.?|\ddr\.?|\(dr\.?\))$/i.test(s) || /^\(?dr\.?\)?\s+/i.test(s)) marker = "debit";
+  s = s
+    .replace(/(?:\(?(?:cr|dr)\.?\)?)$/i, "")
+    .replace(/^\(?(?:cr|dr)\.?\)?\s+/i, "");
   const negative = /^\s*-|^\(.*\)$|-\s*$/.test(s.trim());
   s = s.replace(/[₹$€£]|rs\.?|inr|usd|[,\s()+-]/gi, "");
   if (!/^\d*\.?\d+$/.test(s)) return null;
@@ -206,22 +254,85 @@ export function parseAmount(raw: string): ParsedAmount | null {
   return { value: negative ? -n : n, marker };
 }
 
+export function parseTypeIndicator(raw: string): "debit" | "credit" | null {
+  const lower = raw.trim().toLowerCase();
+  if (!lower) return null;
+  const lettersOnly = lower.replace(/[^a-z]/g, "");
+  if (lettersOnly === "c" || lettersOnly === "cr" || /\b(credit|cr)\b/.test(lower)) {
+    return "credit";
+  }
+  if (lettersOnly === "d" || lettersOnly === "dr" || /\b(debit|dr)\b/.test(lower)) {
+    return "debit";
+  }
+  return null;
+}
+
 const NOISE_WORDS = new Set([
   "upi", "neft", "imps", "rtgs", "pos", "ach", "nach", "ecs", "emandate", "mandate", "autopay", "auto", "debit",
   "card", "payment", "pymt", "txn", "ref", "purchase", "dr", "cr", "to", "from", "by", "via", "recurring",
+  "wdl", "tfr", "trf", "p2m", "p2a", "inft", "bil", "mb", "ib", "paymandate", "autopaydebit", "nachdr", "achdr",
+  "si", "standing", "instruction",
 ]);
+
+const NON_ACTIVE_NARRATION_RE =
+  /\b(failed|failure|declined|unsuccessful|reversed|reversal|chargeback|refund|refunded|cashback|bounced|dishonour(?:ed)?)\b|(?:^|[\/\-_\s])rev(?:[\/\-_\s]|$)/i;
+
+const MANDATE_LIFECYCLE_ONLY_RE =
+  /\b(?:upi[-\s/]*)?(?:mandate|autopay|e-?mandate|si)\s*(?:creation|create|reg|registration|setup|revoke|revocation|cancel|cancelled|canceled|pause|paused|suspend|suspended|modification|modify)\b|\b(?:creation|registration|revocation)\s+of\s+(?:upi\s*)?(?:mandate|autopay|e-?mandate)\b/i;
+
+const MANDATE_PING_RE = /\b(mandate|autopay|e-?mandate|emandate|verification|auth)\b/i;
+
+/**
+ * Returns true when a debit row represents a failed attempt, reversal/refund,
+ * or non-billing mandate registration/verification ping rather than an active charge.
+ */
+export function isIgnoredNonSubscriptionTx(description: string, amount: number): boolean {
+  const s = description.trim();
+  if (!s) return true;
+  if (NON_ACTIVE_NARRATION_RE.test(s)) return true;
+  if (MANDATE_LIFECYCLE_ONLY_RE.test(s)) return true;
+  if (amount <= 5 && MANDATE_PING_RE.test(s)) return true;
+  return false;
+}
+
+/** Classifies payment rail purely from actual transaction narration evidence. */
+export function detectPaymentRail(description: string): PaymentRail {
+  const s = description.toLowerCase();
+  if (/\b(upi[-/\s]*autopay|upi[-/\s]*mandate|upi[-/\s]*si|autopay|paymandate|mandateexec)\b/.test(s)) {
+    return "upi_autopay";
+  }
+  if (/\b(nach|ecs|ach|nachdr|achdr|e-?mandate|emandate)\b/.test(s)) {
+    return "nach_emandate";
+  }
+  if (/\bmandate\b/.test(s)) {
+    return /\bupi\b|@[a-z0-9.-]+/.test(s) ? "upi_autopay" : "nach_emandate";
+  }
+  if (/\b(standing\s*inst(?:ruction)?|card[-/\s]*si|pos[-/\s]*si|visa\s*si|mastercard\s*si|rupay\s*si|recurring\s*card)\b/.test(s) || /(?:^|[\s/-])si(?:[\s/-]|$)/.test(s)) {
+    return "card_si";
+  }
+  if (/\bupi\b|@[a-z0-9.-]+/.test(s)) {
+    return "upi";
+  }
+  return "unknown";
+}
 
 /** Stable key for grouping charges from the same merchant despite changing reference numbers. */
 export function merchantKey(description: string): string {
-  const cleaned = description
+  const tokens = description
     .toLowerCase()
     .replace(/@[a-z0-9.-]+/g, " ") // UPI handles like netflix@okaxis
+    .replace(/\b[a-z]{4}0[a-z0-9]{6}\b/gi, " ") // 11-char Indian IFSC codes like SBIN0001234
     .replace(/\d+/g, " ")
     .replace(/[^a-z]+/g, " ")
     .split(" ")
-    .filter((w) => w && !NOISE_WORDS.has(w))
-    .join(" ")
-    .trim();
+    .filter((w) => w && !NOISE_WORDS.has(w));
+
+  // Collapse adjacent duplicate tokens (e.g., "netflix netflix com" -> "netflix com")
+  const deduped: string[] = [];
+  for (const w of tokens) {
+    if (deduped[deduped.length - 1] !== w) deduped.push(w);
+  }
+  const cleaned = deduped.join(" ").trim();
   return cleaned || description.toLowerCase().trim();
 }
 
@@ -281,9 +392,8 @@ export function analyzeCsv(csv: string): ScanResult {
 
     let marker = amount.marker;
     if (cols.type >= 0) {
-      const t = (cells[cols.type] ?? "").toLowerCase();
-      if (/credit|^cr\b|\bcr$/.test(t)) marker = "credit";
-      else if (/debit|^dr\b|\bdr$/.test(t)) marker = "debit";
+      const typeMarker = parseTypeIndicator(cells[cols.type] ?? "");
+      if (typeMarker) marker = typeMarker;
     }
     if (marker === null && amount.value < 0) negatives++;
 
@@ -310,6 +420,89 @@ export function analyzeCsv(csv: string): ScanResult {
   return detectRecurringSubscriptions(txs);
 }
 
+function resolveGroupRail(list: Tx[]): PaymentRail {
+  const rails = list.map((tx) => detectPaymentRail(tx.merchant));
+  if (rails.includes("upi_autopay")) return "upi_autopay";
+  if (rails.includes("nach_emandate")) return "nach_emandate";
+  if (rails.includes("card_si")) return "card_si";
+  if (rails.includes("upi")) return "upi";
+  return "unknown";
+}
+
+function computeConfidence(
+  list: Tx[],
+  share: number,
+  spread: number,
+  rail: PaymentRail,
+  hasKnownService: boolean
+): ConfidenceLevel {
+  const hasExplicitMandate =
+    rail === "upi_autopay" || rail === "nach_emandate" || rail === "card_si";
+  if (
+    (list.length >= 3 && share >= 0.8 && spread <= 1.05) ||
+    (hasExplicitMandate && list.length >= 2 && spread <= 1.08) ||
+    (hasKnownService && list.length >= 2 && spread <= 1.05)
+  ) {
+    return "high";
+  }
+  if (list.length >= 3 || hasKnownService || (share >= 0.75 && spread <= 1.08)) {
+    return "medium";
+  }
+  return "possible";
+}
+
+export function formatPaymentRailLabel(rail?: PaymentRail | string | null): string | null {
+  switch (rail) {
+    case "upi_autopay":
+      return "UPI AutoPay";
+    case "nach_emandate":
+      return "NACH / e-Mandate";
+    case "card_si":
+      return "Card Standing Instruction";
+    case "upi":
+      return "UPI";
+    default:
+      return null;
+  }
+}
+
+export function formatConfidenceLabel(confidence?: ConfidenceLevel | string | null): string | null {
+  switch (confidence) {
+    case "high":
+      return "High confidence";
+    case "medium":
+      return "Medium confidence";
+    case "possible":
+      return "Possible recurring";
+    default:
+      return null;
+  }
+}
+
+function buildDetectionReason(
+  frequency: Frequency,
+  occurrences: number,
+  spread: number,
+  rail: PaymentRail,
+  hasKnownService: boolean
+): string {
+  const railLabel = formatPaymentRailLabel(rail);
+  const cadenceLabel =
+    occurrences === 2 ? `2 ${frequency} charges` : `${occurrences} ${frequency} charges`;
+  if (railLabel && rail !== "upi") {
+    return `${railLabel} detected · ${cadenceLabel}`;
+  }
+  if (rail === "upi") {
+    return hasKnownService
+      ? `Known service via UPI · ${cadenceLabel}`
+      : `Recurring UPI pattern · ${cadenceLabel}`;
+  }
+  if (spread <= 1.02) {
+    return `Fixed ${frequency} amount · ${occurrences} charges`;
+  }
+  return `Consistent ${frequency} interval · ${occurrences} charges`;
+}
+
 export function detectRecurringSubscriptions(
   txs: Tx[],
   emptyMessage = "No spending transactions were found in this statement."
@@ -318,9 +511,25 @@ export function detectRecurringSubscriptions(
     throw new Error(emptyMessage);
   }
 
+  const activeTxs = txs.filter(
+    (tx) => !isIgnoredNonSubscriptionTx(tx.merchant, tx.amount)
+  );
+
+  const times = txs.map((t) => t.date.getTime());
+  const periodDays = Math.round((Math.max(...times) - Math.min(...times)) / DAY);
+
+  if (!activeTxs.length) {
+    return {
+      subscriptions: [],
+      monthlyTotal: 0,
+      transactionsAnalyzed: txs.length,
+      periodDays,
+    };
+  }
+
   // Group by merchant, collapsing exact same-day duplicates.
   const groups = new Map<string, Tx[]>();
-  for (const tx of txs) {
+  for (const tx of activeTxs) {
     const key = merchantKey(tx.merchant);
     const list = groups.get(key) ?? [];
     if (
@@ -372,6 +581,21 @@ export function detectRecurringSubscriptions(
       service ? service.name : latest.merchant,
       service?.category
     );
+    const paymentRail = resolveGroupRail(list);
+    const confidence = computeConfidence(
+      list,
+      best.share,
+      spread,
+      paymentRail,
+      Boolean(service)
+    );
+    const detectionReason = buildDetectionReason(
+      best.cycle.frequency,
+      list.length,
+      spread,
+      paymentRail,
+      Boolean(service)
+    );
 
     subscriptions.push({
       merchant: service ? service.name : displayName(latest.merchant),
@@ -380,6 +604,9 @@ export function detectRecurringSubscriptions(
       occurrences: list.length,
       monthlyEquivalent: monthlyEquivalent(avgAmount, best.cycle.frequency),
       category,
+      paymentRail,
+      confidence,
+      detectionReason,
       service: service
         ? {
             name: service.name,
@@ -393,9 +620,6 @@ export function detectRecurringSubscriptions(
 
   subscriptions.sort((a, b) => b.monthlyEquivalent - a.monthlyEquivalent);
 
-  const times = txs.map((t) => t.date.getTime());
-  const periodDays = Math.round((Math.max(...times) - Math.min(...times)) / DAY);
-
   return {
     subscriptions,
     monthlyTotal: subscriptions.reduce((sum, s) => sum + s.monthlyEquivalent, 0),
@@ -403,3 +627,4 @@ export function detectRecurringSubscriptions(
     periodDays,
   };
 }
+

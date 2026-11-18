@@ -14,6 +14,8 @@ const sampleSubs: Subscription[] = [
     occurrences: 3,
     monthlyEquivalent: 649,
     category: "Streaming & Media",
+    confidence: "high",
+    paymentRail: "upi_autopay",
     service: {
       name: "Netflix",
       url: "https://www.netflix.com/cancelplan",
@@ -51,7 +53,7 @@ describe("subscriptionsToCsv", () => {
     const lines = csv.slice(1).trim().split("\r\n");
     expect(lines).toHaveLength(3);
     expect(lines[1]).toBe(
-      '"Netflix, ""Standard""",Streaming & Media,monthly,3,649.00,649.00,7788.00,https://www.netflix.com/cancelplan'
+      '"Netflix, ""Standard""",Streaming & Media,monthly,3,649.00,649.00,7788.00,High confidence,UPI AutoPay,https://www.netflix.com/cancelplan'
     );
     expect(lines[2]).toContain("\"'=HYPERLINK(\"\"http://bad.example\"\")\"");
     expect(lines[2]).toContain(",1200.00,100.00,1200.00,");
@@ -59,10 +61,13 @@ describe("subscriptionsToCsv", () => {
 });
 
 describe("buildCsvExportFilename", () => {
-  it("formats sanitized export filenames with ISO date", () => {
+  it("formats sanitized export filenames with ISO date for CSV and PDF inputs", () => {
     const d = new Date("2026-11-14T12:00:00.000Z");
     expect(buildCsvExportFilename("HDFC_Savings_Oct.csv", d)).toBe(
       "subscriptions-hdfc-savings-oct-2026-11-14.csv"
+    );
+    expect(buildCsvExportFilename("ICICI_Card_Oct.pdf", d)).toBe(
+      "subscriptions-icici-card-oct-2026-11-14.csv"
     );
     expect(buildCsvExportFilename("", d)).toBe("subscriptions-2026-11-14.csv");
   });

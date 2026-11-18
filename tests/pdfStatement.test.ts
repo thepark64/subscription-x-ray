@@ -214,4 +214,61 @@ describe("analyzePdfPages", () => {
     expect(badErr.reason).toBe("incorrect");
     expect(badErr.message).toMatch(/didn't match/i);
   });
+
+  it("ignores Chq/Ref numeric references, handles Debit/Credit D/C indicators, and excludes mandate pings", () => {
+    const pages: PdfTextPage[] = [
+      {
+        items: [
+          ...row(740, [
+            [40, "Txn Dt", 45],
+            [110, "Particulars", 110],
+            [270, "Chq/Ref No", 60],
+            [355, "Debit/Credit", 55],
+            [440, "Amount", 55],
+          ]),
+          ...row(715, [
+            [40, "01/01/2024", 55],
+            [110, "UPI MANDATE CREATION NETFLIX", 130],
+            [275, "901234", 45],
+            [375, "D", 15],
+            [445, "1.00", 40],
+          ]),
+          ...row(695, [
+            [40, "05/01/2024", 55],
+            [110, "UPI-AUTOPAY-NETFLIX@OKICICI", 130],
+            [275, "901235", 45],
+            [375, "D", 15],
+            [445, "649.00", 45],
+          ]),
+          ...row(675, [
+            [40, "05/02/2024", 55],
+            [110, "UPI-AUTOPAY-NETFLIX@OKICICI", 130],
+            [275, "901236", 45],
+            [375, "D", 15],
+            [445, "649.00", 45],
+          ]),
+          ...row(655, [
+            [40, "06/03/2024", 55],
+            [110, "UPI-AUTOPAY-NETFLIX@OKICICI", 130],
+            [275, "901237", 45],
+            [375, "D", 15],
+            [445, "649.00", 45],
+          ]),
+          ...row(635, [
+            [40, "10/01/2024", 55],
+            [110, "SALARY DEPOSIT", 110],
+            [275, "901238", 45],
+            [375, "C", 15],
+            [435, "65,000.00", 55],
+          ]),
+        ],
+      },
+    ];
+
+    const result = analyzePdfPages(pages);
+    expect(result.subscriptions).toHaveLength(1);
+    expect(result.subscriptions[0].merchant).toBe("Netflix");
+    expect(result.subscriptions[0].amount).toBeCloseTo(649);
+    expect(result.subscriptions[0].paymentRail).toBe("upi_autopay");
+  });
 });

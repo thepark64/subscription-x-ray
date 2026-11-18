@@ -118,4 +118,59 @@ describe("analyzeCsv", () => {
     expect(() => analyzeCsv("just one line")).toThrow();
     expect(() => analyzeCsv("foo,bar\n1,2")).toThrow(/columns/i);
   });
+
+  it("handles combined Debit/Credit indicator columns with C/D flags and Txn Dt headers", () => {
+    const csv = [
+      "Txn Dt|Particulars|Chq No|Amount|Debit/Credit",
+      "05/01/2024|UPI-AUTOPAY-SPOTIFY INDIA@OKSBI|401234567890|119/-|D",
+      "05/02/2024|UPI-AUTOPAY-SPOTIFY INDIA@OKSBI|402234567890|119/-|D",
+      "05/03/2024|UPI-AUTOPAY-SPOTIFY INDIA@OKSBI|403234567890|119/-|D",
+      "10/01/2024|SALARY REF|998877|50000.00|C",
+      "10/02/2024|SALARY REF|998878|50000.00|C",
+    ].join("\n");
+    const r = analyzeCsv(csv);
+    expect(r.subscriptions).toHaveLength(1);
+    expect(r.subscriptions[0].merchant).toBe("Spotify");
+    expect(r.subscriptions[0].amount).toBeCloseTo(119);
+    expect(r.subscriptions[0].paymentRail).toBe("upi_autopay");
+    expect(r.subscriptions[0].confidence).toBe("high");
+  });
+
+  it("excludes failed attempts, reversals, refunds, and mandate registration holds", () => {
+    const csv = [
+      "Txn Date,Narration,Withdrawal Amt.,Deposit Amt.",
+      "01/01/2024,UPI MANDATE CREATION NETFLIX@OKAXIS,2.00,",
+      "01/02/2024,UPI MANDATE CREATION NETFLIX@OKAXIS,2.00,",
+      "05/01/2024,FAILED UPI AUTOPAY NETFLIX,649.00,",
+      "05/02/2024,UPI/REV/412345678901/NETFLIX,649.00,",
+      "10/01/2024,REFUND FROM AMAZON PRIME,299.00,",
+      "10/02/2024,REFUND FROM AMAZON PRIME,299.00,",
+      "15/01/2024,NACH-DR-CULTFIT INDIA-SBIN0001234,999.00,",
+      "15/02/2024,NACH-DR-CULTFIT INDIA-SBIN0001234,999.00,",
+      "15/03/2024,NACH-DR-CULTFIT INDIA-SBIN0001234,999.00,",
+    ].join("\n");
+    const r = analyzeCsv(csv);
+    expect(r.subscriptions).toHaveLength(1);
+    expect(r.subscriptions[0].merchant).toBe("Cult.fit");
+    expect(r.subscriptions[0].paymentRail).toBe("nach_emandate");
+    expect(r.subscriptions[0].confidence).toBe("high");
+  });
+
+  it("keeps plain UPI distinct from confirmed UPI AutoPay mandates and strips IFSC codes", () => {
+    expect(
+      merchantKey("WDL TFR UPI/DR/401234567890/SPOTIFY/SBIN0001234/SPOTIFY@OKSBI")
+    ).toBe(
+      merchantKey("WDL TFR UPI/DR/409988776655/SPOTIFY/HDFC0000240/SPOTIFY@OKSBI")
+    );
+    const csv = [
+      "Date,Description,Amount",
+      "05/01/2024,UPI/401234567890/CANVA@OKICICI,-499.00",
+      "05/02/2024,UPI/409988776655/CANVA@OKICICI,-499.00",
+      "05/03/2024,UPI/405566778899/CANVA@OKICICI,-499.00",
+    ].join("\n");
+    const r = analyzeCsv(csv);
+    expect(r.subscriptions).toHaveLength(1);
+    expect(r.subscriptions[0].merchant).toBe("Canva");
+    expect(r.subscriptions[0].paymentRail).toBe("upi");
+  });
 });

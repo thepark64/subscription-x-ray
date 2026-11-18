@@ -5,6 +5,11 @@ import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Refund Policy — Subscription X-Ray",
+  description:
+    "Refund Policy for Subscription X-Ray ₹69 one-time 12-scan credit packs processed via Cashfree Payments.",
+  alternates: {
+    canonical: "/refund",
+  },
 };
 
 export default function RefundPage() {
@@ -17,28 +22,14 @@ export default function RefundPage() {
             <span>Subscription X-Ray</span>
           </Link>
           <h1>Refund Policy</h1>
-          <p className="legal-updated">
-            Last updated:{" "}
-            {new Date().toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-
-          <div className="legal-disclaimer">
-            This is a starting draft. Decide your actual refund window and
-            conditions, then have this reviewed before going live — payment
-            gateways require a clear refund policy to be publicly visible
-            before approving a merchant account.
-          </div>
+          <p className="legal-updated">Last updated: 18 November 2026</p>
 
           <section>
             <h2>Digital product, used credits</h2>
             <p>
               Scan credits are a digital product delivered immediately on
-              payment. Because of this, we generally don&apos;t offer refunds
-              once a payment has successfully added credits to your account.
+              payment confirmation. Once credits are added to your account,
+              completed pack purchases are generally non-refundable.
             </p>
           </section>
 

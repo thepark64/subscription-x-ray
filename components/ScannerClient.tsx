@@ -153,15 +153,6 @@ export default function ScannerClient() {
     }
   }
 
-  async function spendCredit(): Promise<boolean> {
-    const { data: remaining, error } = await supabase.rpc(
-      "consume_scan_credit"
-    );
-    if (error) return false;
-    setCredits(remaining);
-    return true;
-  }
-
   if (gate === "checking") {
     return (
       <main className="gate-wrap">
@@ -329,7 +320,6 @@ export default function ScannerClient() {
           userId={userId}
           credits={credits}
           locked={locked}
-          spendCredit={spendCredit}
           onCreditsUpdated={setCredits}
           paywall={
             <PayButton

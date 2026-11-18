@@ -56,7 +56,7 @@ export function buildPdfExportFilename(
 ): string {
   const dateStamp = now.toISOString().slice(0, 10);
   const slug = (sourceName ?? "")
-    .replace(/\.csv$/i, "")
+    .replace(/\.(csv|pdf)$/i, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -283,7 +283,7 @@ export async function exportSubscriptionsToPdf(
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      "Generated locally in your browser - raw statement CSV never uploaded.",
+      "Generated locally in your browser - raw CSV/PDF statement never uploaded.",
       margin,
       footerY
     );

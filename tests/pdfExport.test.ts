@@ -59,10 +59,13 @@ describe("pdfExport helpers", () => {
     expect(model.rows[1].monthlyFormatted).toBe("INR 352.50");
   });
 
-  it("uses fallback filename when no statement name is given", () => {
+  it("uses fallback filename and strips .pdf extensions cleanly", () => {
     const now = new Date("2026-11-15T12:00:00.000Z");
     expect(buildPdfExportFilename("", now)).toBe(
       "subscriptions-report-2026-11-15.pdf"
+    );
+    expect(buildPdfExportFilename("Axis_Card_Statement.pdf", now)).toBe(
+      "subscriptions-report-axis-card-statement-2026-11-15.pdf"
     );
   });
 });

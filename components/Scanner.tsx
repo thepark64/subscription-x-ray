@@ -7,15 +7,26 @@ import {
   AlertCircle,
   ArrowUpRight,
   Check,
+  ChevronDown,
+  ChevronUp,
   Download,
   FileText,
+  HelpCircle,
   Loader2,
   Lock,
   Search,
   Upload,
   X,
 } from "lucide-react";
-import { analyzeCsv, type Frequency, type ScanResult } from "@/lib/detection";
+import {
+  analyzeCsv,
+  formatConfidenceLabel,
+  formatPaymentRailLabel,
+  type ConfidenceLevel,
+  type Frequency,
+  type PaymentRail,
+  type ScanResult,
+} from "@/lib/detection";
 import { analyzePdfFile, PdfPasswordError } from "@/lib/pdfStatement";
 import {
   buildCsvExportFilename,
@@ -32,6 +43,7 @@ import {
 import {
   classifySubscriptionCategory,
   findKnownService,
+  getCancellationGuidance,
 } from "@/lib/services";
 import {
   buildCategoryOptions,
@@ -39,8 +51,12 @@ import {
   getSubscriptionCategory,
   type CategoryFilter,
 } from "@/lib/subscriptionFilter";
+import {
+  buildSubscriptionSelectionKey,
+} from "@/lib/savingsSummary";
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 import { supabase } from "@/lib/supabaseClient";
+import SavingsShareCard from "@/components/SavingsShareCard";
 import ScanHistory, {
   type PastScan,
   type SavedSubscriptionRow,
@@ -110,19 +126,37 @@ function yieldToPaint(): Promise<void> {
   });
 }
 
+function readFallbackMap(storageKey: string): Record<string, string> {
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeFallbackEntry(storageKey: string, scanId: string, value: string) {
+  try {
+    const map = readFallbackMap(storageKey);
+    if (value) map[scanId] = value;
+    else delete map[scanId];
+    window.localStorage.setItem(storageKey, JSON.stringify(map));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
 export default function Scanner({
   userId,
   credits = 0,
   locked,
   paywall,
-  spendCredit,
   onCreditsUpdated,
 }: {
   userId: string;
   credits?: number;
   locked: boolean;
   paywall: ReactNode;
-  spendCredit: () => Promise<boolean>;
   onCreditsUpdated?: (remaining: number) => void;
 }) {
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -154,6 +188,8 @@ export default function Scanner({
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
+  const [expandedGuideKey, setExpandedGuideKey] = useState<string | null>(null);
+  const [selectedSavingsKeys, setSelectedSavingsKeys] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
@@ -177,6 +213,17 @@ export default function Scanner({
     [result, searchQuery, selectedCategory]
   );
 
+  const filteredEntries = useMemo(() => {
+    if (!result) return [];
+    const allowed = new Set(filteredSubscriptions);
+    return result.subscriptions
+      .map((sub, originalIndex) => ({
+        sub,
+        selectionKey: buildSubscriptionSelectionKey(sub, originalIndex),
+      }))
+      .filter((entry) => allowed.has(entry.sub));
+  }, [result, filteredSubscriptions]);
+
   const filteredMonthlyTotal = useMemo(
     () => filteredSubscriptions.reduce((sum, s) => sum + s.monthlyEquivalent, 0),
     [filteredSubscriptions]
@@ -188,6 +235,15 @@ export default function Scanner({
   function resetFilters() {
     setSearchQuery("");
     setSelectedCategory("All");
+    setExpandedGuideKey(null);
+  }
+
+  function toggleSavingsSelection(selectionKey: string) {
+    setSelectedSavingsKeys((prev) =>
+      prev.includes(selectionKey)
+        ? prev.filter((k) => k !== selectionKey)
+        : [...prev, selectionKey]
+    );
   }
 
   function handleDownloadCsv() {
@@ -235,36 +291,8 @@ export default function Scanner({
     }
   }
 
-  function readFallbackMap(storageKey: string): Record<string, string> {
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function writeFallbackEntry(storageKey: string, scanId: string, value: string) {
-    try {
-      const map = readFallbackMap(storageKey);
-      if (value) map[scanId] = value;
-      else delete map[scanId];
-      window.localStorage.setItem(storageKey, JSON.stringify(map));
-    } catch {
-      // ignore storage quota errors
-    }
-  }
-
-  function readFallbackLabels(): Record<string, string> {
-    return readFallbackMap(`xray_scan_names_${userId}`);
-  }
-
   function writeFallbackLabel(scanId: string, name: string) {
     writeFallbackEntry(`xray_scan_names_${userId}`, scanId, name);
-  }
-
-  function readFallbackFileNames(): Record<string, string> {
-    return readFallbackMap(`xray_scan_files_${userId}`);
   }
 
   function writeFallbackFileName(scanId: string, name: string) {
@@ -287,8 +315,8 @@ export default function Scanner({
 
         if (!active) return;
 
-        const labels = readFallbackLabels();
-        const fileNames = readFallbackFileNames();
+        const labels = readFallbackMap(`xray_scan_names_${userId}`);
+        const fileNames = readFallbackMap(`xray_scan_files_${userId}`);
 
         if (
           res.error &&
@@ -351,16 +379,6 @@ export default function Scanner({
     };
   }, [userId]);
 
-  function isMissingSaveScanRpc(err: { code?: string; message?: string } | null) {
-    if (!err) return false;
-    const msg = (err.message ?? "").toLowerCase();
-    return (
-      err.code === "PGRST202" ||
-      err.code === "42883" ||
-      msg.includes("save_scan_and_spend_credit")
-    );
-  }
-
   async function saveScanAndSpendCredit(
     data: ScanResult,
     sourceFilename: string
@@ -370,170 +388,99 @@ export default function Scanner({
     const cleanFileName = normalizeFileName(sourceFilename);
     setActiveScanLabel(scanName);
 
-    const subPayload = data.subscriptions.map((sub) => ({
+    const hasSubscriptions = data.subscriptions.length > 0;
+    const fullSubPayload = data.subscriptions.map((sub) => ({
       merchant: sub.merchant,
       amount: sub.amount,
       frequency: sub.frequency,
       occurrences: sub.occurrences,
       monthly_equivalent: sub.monthlyEquivalent,
+      confidence: sub.confidence ?? null,
+      payment_rail:
+        sub.paymentRail && sub.paymentRail !== "unknown"
+          ? sub.paymentRail
+          : null,
+      detection_reason: sub.detectionReason ?? null,
     }));
 
-    // Preferred path: single atomic Postgres transaction (saves scan + details + spends 1 credit).
+    // Single atomic Postgres transaction via SECURITY DEFINER RPC:
+    // saves scan + detected subscriptions, and deducts 1 credit iff >= 1 subscription.
     const rpcRes = await supabase.rpc("save_scan_and_spend_credit", {
       p_statement_name: scanName,
       p_file_name: cleanFileName || null,
       p_subscription_count: data.subscriptions.length,
-      p_monthly_total: data.monthlyTotal,
-      p_annual_total: data.monthlyTotal * 12,
-      p_subscriptions: subPayload,
+      p_monthly_total: hasSubscriptions ? data.monthlyTotal : 0,
+      p_annual_total: hasSubscriptions ? data.monthlyTotal * 12 : 0,
+      p_subscriptions: fullSubPayload,
     });
 
-    if (!rpcRes.error && rpcRes.data && typeof rpcRes.data === "object") {
-      const payload = rpcRes.data as {
-        remaining?: number;
-        scan?: PastScan;
-      };
-      if (typeof payload.remaining === "number") {
-        onCreditsUpdated?.(payload.remaining);
-      }
-      if (payload.scan?.id) {
-        writeFallbackLabel(payload.scan.id, scanName);
-        if (cleanFileName) {
-          writeFallbackFileName(payload.scan.id, cleanFileName);
-        }
-        setStatementLabel("");
-        setPastScans((prev) => [
-          {
-            id: payload.scan!.id,
-            scanned_at: payload.scan!.scanned_at,
-            statement_name: payload.scan!.statement_name ?? scanName,
-            file_name: payload.scan!.file_name ?? (cleanFileName || null),
-            subscription_count: data.subscriptions.length,
-            monthly_total: data.monthlyTotal,
-          },
-          ...prev,
-        ]);
-        return true;
-      }
-    }
-
-    if (rpcRes.error && !isMissingSaveScanRpc(rpcRes.error)) {
+    if (rpcRes.error) {
       const msg = (rpcRes.error.message ?? "").toLowerCase();
-      setError(
-        msg.includes("no scan credits")
-          ? "You have no scan credits remaining. Buy a pack to continue."
-          : "Could not save your scan or use a scan credit. No credit was deducted — please try again."
-      );
-      return false;
-    }
-
-    // Safe fallback for older schemas without save_scan_and_spend_credit:
-    // Save scan + details FIRST, then deduct 1 credit, rolling back the scan row if deduction fails.
-    let insertResult = await supabase
-      .from("scans")
-      .insert({
-        user_id: userId,
-        statement_name: scanName,
-        file_name: cleanFileName || null,
-        subscription_count: data.subscriptions.length,
-        monthly_total: data.monthlyTotal,
-        annual_total: data.monthlyTotal * 12,
-      })
-      .select()
-      .single();
-
-    if (
-      insertResult.error &&
-      isMissingColumnError(insertResult.error, "file_name")
-    ) {
-      insertResult = await supabase
-        .from("scans")
-        .insert({
-          user_id: userId,
-          statement_name: scanName,
-          subscription_count: data.subscriptions.length,
-          monthly_total: data.monthlyTotal,
-          annual_total: data.monthlyTotal * 12,
-        })
-        .select()
-        .single();
-    }
-
-    if (
-      insertResult.error &&
-      isMissingColumnError(insertResult.error, "statement_name")
-    ) {
-      insertResult = await supabase
-        .from("scans")
-        .insert({
-          user_id: userId,
-          subscription_count: data.subscriptions.length,
-          monthly_total: data.monthlyTotal,
-          annual_total: data.monthlyTotal * 12,
-        })
-        .select()
-        .single();
-    }
-
-    const { data: scanRow, error: scanError } = insertResult;
-
-    if (scanError || !scanRow) {
-      setError(
-        "Could not save your scan to history. No scan credit was used — please try again."
-      );
-      return false;
-    }
-
-    if (subPayload.length) {
-      const { error: subsError } = await supabase
-        .from("detected_subscriptions")
-        .insert(
-          subPayload.map((sub) => ({
-            scan_id: scanRow.id,
-            user_id: userId,
-            ...sub,
-          }))
-        );
-      if (subsError) {
-        await supabase
-          .from("scans")
-          .delete()
-          .eq("id", scanRow.id)
-          .eq("user_id", userId);
+      if (msg.includes("no scan credits")) {
+        onCreditsUpdated?.(0);
         setError(
-          "Could not save detected subscriptions to history. No scan credit was used — please try again."
+          `You have no scan credits remaining. Unlock ${PACK_SIZE} scans for ${PACK_PRICE_LABEL} to continue.`
         );
-        return false;
+      } else {
+        setError(
+          "Could not save your scan or use a scan credit. No credit was deducted — please try again."
+        );
       }
+      return false;
     }
 
-    const spent = await spendCredit();
-    if (!spent) {
-      await supabase
-        .from("scans")
-        .delete()
-        .eq("id", scanRow.id)
-        .eq("user_id", userId);
+    if (!rpcRes.data || typeof rpcRes.data !== "object") {
       setError(
-        "Couldn't use a scan credit, so this scan wasn't saved. Please refresh the page and try again."
+        "Unexpected response while saving your scan. No credit was deducted — please try again."
       );
       return false;
     }
 
-    writeFallbackLabel(scanRow.id, scanName);
+    const payload = rpcRes.data as {
+      remaining?: number;
+      credit_used?: boolean;
+      scan?: PastScan;
+    };
+
+    if (typeof payload.remaining === "number") {
+      onCreditsUpdated?.(payload.remaining);
+    }
+
+    if (payload.credit_used === false || !hasSubscriptions) {
+      setSaveNotice("No recurring charges found. No credit used.");
+    }
+
+    if (!payload.scan?.id) {
+      setError(
+        "Could not confirm saved scan record. Please refresh and check your scan history."
+      );
+      return false;
+    }
+
+    writeFallbackLabel(payload.scan.id, scanName);
     if (cleanFileName) {
-      writeFallbackFileName(scanRow.id, cleanFileName);
+      writeFallbackFileName(payload.scan.id, cleanFileName);
     }
 
     setStatementLabel("");
     setPastScans((prev) => [
       {
-        id: scanRow.id,
-        scanned_at: scanRow.scanned_at,
-        statement_name: scanRow.statement_name ?? scanName,
-        file_name: scanRow.file_name ?? (cleanFileName || null),
-        subscription_count: data.subscriptions.length,
-        monthly_total: data.monthlyTotal,
+        id: payload.scan!.id,
+        scanned_at: payload.scan!.scanned_at,
+        statement_name: payload.scan!.statement_name ?? scanName,
+        file_name: payload.scan!.file_name ?? (cleanFileName || null),
+        subscription_count:
+          typeof payload.scan?.subscription_count === "number"
+            ? payload.scan.subscription_count
+            : hasSubscriptions
+              ? data.subscriptions.length
+              : 0,
+        monthly_total:
+          typeof payload.scan?.monthly_total === "number"
+            ? payload.scan.monthly_total
+            : hasSubscriptions
+              ? data.monthlyTotal
+              : 0,
       },
       ...prev,
     ]);
@@ -550,18 +497,39 @@ export default function Scanner({
 
     setLoadingDetailsId(scanId);
     try {
-      const { data } = await supabase
+      const res = await supabase
         .from("detected_subscriptions")
         .select(
-          "id, merchant, amount, frequency, occurrences, monthly_equivalent"
+          "id, merchant, amount, frequency, occurrences, monthly_equivalent, confidence, payment_rail, detection_reason"
         )
         .eq("scan_id", scanId)
         .eq("user_id", userId)
         .order("monthly_equivalent", { ascending: false });
-      setScanDetails((prev) => ({
-        ...prev,
-        [scanId]: data ?? [],
-      }));
+
+      if (
+        res.error &&
+        (isMissingColumnError(res.error, "confidence") ||
+          isMissingColumnError(res.error, "payment_rail") ||
+          isMissingColumnError(res.error, "detection_reason"))
+      ) {
+        const legacy = await supabase
+          .from("detected_subscriptions")
+          .select(
+            "id, merchant, amount, frequency, occurrences, monthly_equivalent"
+          )
+          .eq("scan_id", scanId)
+          .eq("user_id", userId)
+          .order("monthly_equivalent", { ascending: false });
+        setScanDetails((prev) => ({
+          ...prev,
+          [scanId]: (legacy.data ?? []) as SavedSubscriptionRow[],
+        }));
+      } else {
+        setScanDetails((prev) => ({
+          ...prev,
+          [scanId]: (res.data ?? []) as SavedSubscriptionRow[],
+        }));
+      }
     } finally {
       setLoadingDetailsId(null);
     }
@@ -634,6 +602,19 @@ export default function Scanner({
   ) {
     const mapped = details.map((item) => {
       const service = findKnownService(item.merchant) ?? undefined;
+      const validRail =
+        item.payment_rail === "upi_autopay" ||
+        item.payment_rail === "nach_emandate" ||
+        item.payment_rail === "card_si" ||
+        item.payment_rail === "upi"
+          ? (item.payment_rail as PaymentRail)
+          : undefined;
+      const validConf =
+        item.confidence === "high" ||
+        item.confidence === "medium" ||
+        item.confidence === "possible"
+          ? (item.confidence as ConfidenceLevel)
+          : undefined;
       return {
         merchant: item.merchant,
         amount: Number(item.amount),
@@ -641,6 +622,9 @@ export default function Scanner({
         occurrences: Number(item.occurrences),
         monthlyEquivalent: Number(item.monthly_equivalent),
         category: classifySubscriptionCategory(item.merchant, service?.category),
+        confidence: validConf,
+        paymentRail: validRail,
+        detectionReason: item.detection_reason ?? undefined,
         service,
       };
     });
@@ -653,6 +637,8 @@ export default function Scanner({
     setReviewingHistoryAt(scan.scanned_at);
     setSearchQuery("");
     setSelectedCategory("All");
+    setExpandedGuideKey(null);
+    setSelectedSavingsKeys([]);
     setResult({
       subscriptions: mapped,
       monthlyTotal: Number(scan.monthly_total),
@@ -738,8 +724,11 @@ export default function Scanner({
       setResult(data);
       setSearchQuery("");
       setSelectedCategory("All");
+      setExpandedGuideKey(null);
+      setSelectedSavingsKeys([]);
     } catch (e) {
       setResult(null);
+      setSelectedSavingsKeys([]);
       if (e instanceof PdfPasswordError) {
         setPendingPdfFile(file);
         setPdfPasswordError(e.reason === "incorrect" ? e.message : "");
@@ -830,7 +819,7 @@ export default function Scanner({
             <span>{busy ? "Scanning…" : "Choose CSV / PDF"}</span>
             <input
               type="file"
-              accept=".csv,text/csv,.pdf,application/pdf"
+              accept=".csv,.pdf,text/csv,text/comma-separated-values,application/csv,application/pdf,application/vnd.ms-excel"
               onChange={onInput}
               disabled={busy}
             />
@@ -1047,7 +1036,7 @@ export default function Scanner({
                     ref={fileInputRef}
                     className="hidden-input"
                     type="file"
-                    accept=".csv,text/csv,.pdf,application/pdf"
+                    accept=".csv,.pdf,text/csv,text/comma-separated-values,application/csv,application/pdf,application/vnd.ms-excel"
                     onChange={onInput}
                     disabled={busy}
                   />
@@ -1314,40 +1303,131 @@ export default function Scanner({
                 </div>
               )}
 
-              {filteredSubscriptions.length > 0 ? (
+              {filteredEntries.length > 0 ? (
                 <div className="glass-panel subscription-list">
-                  {filteredSubscriptions.map((sub, i) => (
-                    <div
-                      className="subscription"
-                      key={`${i}-${sub.merchant}-${sub.amount}`}
-                    >
-                      <div>
-                        <strong>{sub.merchant}</strong>
-                        <span className="subscription-meta">
-                          {sub.frequency} · {sub.occurrences} charges ·{" "}
-                          {getSubscriptionCategory(sub)}
-                        </span>
-                        {sub.service && (
-                          <a
-                            className="manage-link"
-                            href={sub.service.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <span>{sub.service.label}</span>
-                            <ArrowUpRight size={13} aria-hidden="true" />
-                          </a>
-                        )}
+                  {filteredEntries.map(({ sub, selectionKey }) => {
+                    const rowKey = selectionKey;
+                    const railLabel = formatPaymentRailLabel(sub.paymentRail);
+                    const confLabel = formatConfidenceLabel(sub.confidence);
+                    const guideOpen = expandedGuideKey === rowKey;
+                    const isMarked = selectedSavingsKeys.includes(selectionKey);
+                    const guidance = guideOpen
+                      ? getCancellationGuidance(sub.merchant, sub.paymentRail)
+                      : null;
+
+                    return (
+                      <div
+                        className={`subscription${isMarked ? " is-marked" : ""}`}
+                        key={rowKey}
+                      >
+                        <div className="subscription-check-col">
+                          <input
+                            type="checkbox"
+                            className="savings-checkbox"
+                            checked={isMarked}
+                            onChange={() => toggleSavingsSelection(selectionKey)}
+                            aria-label={`Mark ${sub.merchant} to cancel for savings estimate`}
+                          />
+                        </div>
+                        <div className="subscription-main">
+                          <div className="subscription-title-row">
+                            <strong>{sub.merchant}</strong>
+                            {confLabel && (
+                              <span
+                                className={`sub-badge sub-conf is-${sub.confidence ?? "medium"}`}
+                              >
+                                {confLabel}
+                              </span>
+                            )}
+                            {railLabel && (
+                              <span
+                                className={`sub-badge sub-rail is-${sub.paymentRail ?? "upi"}`}
+                              >
+                                {railLabel}
+                              </span>
+                            )}
+                            {isMarked && (
+                              <span className="sub-badge sub-marked">
+                                Marked to cancel
+                              </span>
+                            )}
+                          </div>
+                          <span className="subscription-meta">
+                            {sub.frequency} · {sub.occurrences} charges ·{" "}
+                            {getSubscriptionCategory(sub)}
+                            {sub.detectionReason ? ` · ${sub.detectionReason}` : ""}
+                          </span>
+                          <div className="subscription-action-row">
+                            {sub.service && (
+                              <a
+                                className="manage-link"
+                                href={sub.service.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <span>{sub.service.label}</span>
+                                <ArrowUpRight size={13} aria-hidden="true" />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              className="guide-toggle-btn"
+                              aria-expanded={guideOpen}
+                              onClick={() =>
+                                setExpandedGuideKey(guideOpen ? null : rowKey)
+                              }
+                            >
+                              <HelpCircle size={13} aria-hidden="true" />
+                              <span>
+                                {sub.paymentRail === "upi_autopay" ||
+                                sub.paymentRail === "upi"
+                                  ? "How to cancel / revoke AutoPay"
+                                  : "How to cancel"}
+                              </span>
+                              {guideOpen ? (
+                                <ChevronUp size={13} aria-hidden="true" />
+                              ) : (
+                                <ChevronDown size={13} aria-hidden="true" />
+                              )}
+                            </button>
+                          </div>
+
+                          {guideOpen && guidance && (
+                            <div className="cancel-guide-box">
+                              <strong className="cancel-guide-title">
+                                {guidance.title}
+                              </strong>
+                              <ul className="cancel-guide-steps">
+                                {guidance.steps.map((step, stepIdx) => (
+                                  <li key={stepIdx}>{step}</li>
+                                ))}
+                              </ul>
+                              {guidance.appShortcuts && (
+                                <div className="cancel-guide-apps">
+                                  {guidance.appShortcuts.map((item) => (
+                                    <div
+                                      key={item.app}
+                                      className="cancel-guide-app"
+                                    >
+                                      <strong>{item.app}:</strong>{" "}
+                                      <span>{item.path}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="subscription-price">
+                          ₹
+                          {sub.monthlyEquivalent.toLocaleString("en-IN", {
+                            maximumFractionDigits: 2,
+                          })}
+                          <small>/mo</small>
+                        </div>
                       </div>
-                      <div className="subscription-price">
-                        ₹
-                        {sub.monthlyEquivalent.toLocaleString("en-IN", {
-                          maximumFractionDigits: 2,
-                        })}
-                        <small>/mo</small>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="glass-panel empty-state results-no-match">
@@ -1370,11 +1450,21 @@ export default function Scanner({
                   </button>
                 </div>
               )}
+
+              <SavingsShareCard
+                subscriptions={result.subscriptions}
+                selectedKeys={selectedSavingsKeys}
+                onClearSelection={() => setSelectedSavingsKeys([])}
+              />
             </>
           ) : (
             <div className="glass-panel empty-state">
-              No recurring charges were confidently detected. Try a CSV or PDF
-              statement covering multiple months of transactions.
+              <strong>No recurring charges found. No credit used.</strong>
+              <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>
+                No recurring payments were identified in this statement. Try
+                another CSV or PDF statement covering multiple months — your
+                scan credit balance was not charged.
+              </p>
             </div>
           )}
 

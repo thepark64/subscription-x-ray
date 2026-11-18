@@ -16,6 +16,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  formatConfidenceLabel,
+  formatPaymentRailLabel,
+} from "@/lib/detection";
+import {
   formatScanTimestamp,
   formatSubscriptionCountLabel,
 } from "@/lib/scanHistory";
@@ -37,6 +41,9 @@ export type SavedSubscriptionRow = {
   frequency: string;
   occurrences: number;
   monthly_equivalent: number;
+  confidence?: string | null;
+  payment_rail?: string | null;
+  detection_reason?: string | null;
 };
 
 type ViewMode = "grid" | "list";
@@ -168,9 +175,9 @@ export default function ScanHistory({
           <div>
             <strong>No successful scans yet</strong>
             <p>
-              Upload a bank or card CSV statement above to detect recurring
-              charges. Each completed scan appears here with its timestamp,
-              source file name, and detected monthly spend.
+              Upload a bank or card CSV or PDF statement above to detect
+              recurring charges. Each completed scan appears here with its
+              timestamp, source file name, and detected monthly spend.
             </p>
           </div>
           {!locked && onRequestScan && (
@@ -180,7 +187,7 @@ export default function ScanHistory({
               onClick={onRequestScan}
             >
               <Upload size={15} aria-hidden="true" />
-              <span>Scan a CSV</span>
+              <span>Scan CSV / PDF</span>
             </button>
           )}
         </div>
@@ -300,7 +307,7 @@ export default function ScanHistory({
                     className={`history-card-filename${fileLabel ? "" : " is-fallback"}`}
                     title={fileLabel ? `Uploaded file: ${fileLabel}` : undefined}
                   >
-                    {fileLabel || "CSV file name unavailable"}
+                    {fileLabel || "File name unavailable"}
                   </span>
                 </div>
 
@@ -332,29 +339,40 @@ export default function ScanHistory({
                     ) : details && details.length > 0 ? (
                       <>
                         <div className="history-detail-list">
-                          {details.map((item) => (
-                            <div
-                              className="history-detail-row"
-                              key={item.id}
-                            >
-                              <div>
-                                <strong>{item.merchant}</strong>
-                                <span className="history-detail-meta">
-                                  {item.frequency} · {item.occurrences} charges ·{" "}
-                                  {classifySubscriptionCategory(item.merchant)}
+                          {details.map((item) => {
+                            const railLabel = formatPaymentRailLabel(
+                              item.payment_rail
+                            );
+                            const confLabel = formatConfidenceLabel(
+                              item.confidence
+                            );
+                            return (
+                              <div
+                                className="history-detail-row"
+                                key={item.id}
+                              >
+                                <div>
+                                  <strong>{item.merchant}</strong>
+                                  <span className="history-detail-meta">
+                                    {item.frequency} · {item.occurrences} charges
+                                    {" · "}
+                                    {classifySubscriptionCategory(item.merchant)}
+                                    {railLabel ? ` · ${railLabel}` : ""}
+                                    {confLabel ? ` · ${confLabel}` : ""}
+                                  </span>
+                                </div>
+                                <span className="history-detail-amount">
+                                  ₹
+                                  {Number(
+                                    item.monthly_equivalent
+                                  ).toLocaleString("en-IN", {
+                                    maximumFractionDigits: 2,
+                                  })}
+                                  /mo
                                 </span>
                               </div>
-                              <span className="history-detail-amount">
-                                ₹
-                                {Number(
-                                  item.monthly_equivalent
-                                ).toLocaleString("en-IN", {
-                                  maximumFractionDigits: 2,
-                                })}
-                                /mo
-                              </span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                         <div className="history-detail-footer">
                           <button

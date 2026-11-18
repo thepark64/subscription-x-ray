@@ -5,6 +5,11 @@ import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Subscription X-Ray",
+  description:
+    "Terms of Service for Subscription X-Ray covering browser-only CSV/PDF statement scanning, non-expiring ₹69 scan packs, and Cashfree checkout.",
+  alternates: {
+    canonical: "/terms",
+  },
 };
 
 export default function TermsPage() {
@@ -17,28 +22,16 @@ export default function TermsPage() {
             <span>Subscription X-Ray</span>
           </Link>
           <h1>Terms of Service</h1>
-          <p className="legal-updated">
-            Last updated:{" "}
-            {new Date().toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-
-          <div className="legal-disclaimer">
-            This is a plain-language starting draft, not legal advice. Have it
-            reviewed by a lawyer familiar with Indian consumer and IT law before
-            relying on it for a live, paying product.
-          </div>
+          <p className="legal-updated">Last updated: 18 November 2026</p>
 
           <section>
             <h2>1. What this service is</h2>
             <p>
               Subscription X-Ray (&quot;we&quot;, &quot;the service&quot;) lets
-              you upload a bank or card statement (CSV or PDF format) to detect
-              recurring charges. Analysis runs in your browser; the raw
-              statement file is not transmitted to or stored on our servers.
+              you analyze a bank or card statement (CSV or PDF format) inside
+              your browser to detect recurring charges and payment mandates.
+              Raw statement files and PDF passwords are never transmitted to or
+              stored on our servers.
             </p>
           </section>
 
@@ -54,11 +47,12 @@ export default function TermsPage() {
           <section>
             <h2>3. Payment and scan credits</h2>
             <p>
-              Each successful payment adds a fixed number of scan credits to
-              your account, as stated on the pricing page at the time of
-              purchase. Credits do not expire and are not transferable between
-              accounts. Payments are processed by Cashfree Payments; we do not
-              store your card or UPI details.
+              Each ₹69 one-time purchase adds 12 scan credits to your account.
+              Credits do not expire and are not transferable between accounts.
+              One credit is deducted when a valid statement yields one or more
+              detected recurring charges; valid scans with zero recurring
+              charges do not deduct a credit. Payments are processed by Cashfree
+              Payments; we do not store your card or UPI credentials.
             </p>
           </section>
 
