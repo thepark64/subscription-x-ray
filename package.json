@@ -31,5 +31,12 @@
     "eslint": "9.35.0",
     "eslint-config-next": "15.5.28",
     "vitest": "^2.1.9"
-  }
+  },
+  "browserslist": [
+    "Chrome >= 109",
+    "Edge >= 109",
+    "Firefox >= 115",
+    "Safari >= 16",
+    "iOS >= 16"
+  ]
 }

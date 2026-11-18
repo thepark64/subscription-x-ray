@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import * as d3 from "d3";
+import {
+  area,
+  axisBottom,
+  axisLeft,
+  curveMonotoneX,
+  easeCubicOut,
+  line,
+  max,
+  scaleLinear,
+  scalePoint,
+  select,
+  transition,
+} from "d3";
 import { TrendingDown, TrendingUp, Minus, Upload } from "lucide-react";
 import {
   buildSixMonthTrend,
@@ -90,7 +102,8 @@ export default function SpendingTrendChart({
     const innerWidth = Math.max(120, width - margin.left - margin.right);
     const innerHeight = Math.max(100, height - margin.top - margin.bottom);
 
-    const svg = d3.select(svgEl);
+    void transition;
+    const svg = select(svgEl);
     svg.selectAll("*").remove();
     svg
       .attr("viewBox", `0 0 ${width} ${height}`)
@@ -122,8 +135,7 @@ export default function SpendingTrendChart({
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const xScale = d3
-      .scalePoint<string>()
+    const xScale = scalePoint<string>()
       .domain(summary.points.map((p) => p.key))
       .range([0, innerWidth])
       .padding(0.28);
@@ -133,11 +145,10 @@ export default function SpendingTrendChart({
         p.hasData && p.monthlyTotal !== null
     );
 
-    const rawMax = d3.max(observed, (d) => d.monthlyTotal) ?? 0;
+    const rawMax = max(observed, (d) => d.monthlyTotal) ?? 0;
     const yMax = rawMax > 0 ? rawMax * 1.18 : 1000;
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([0, yMax])
       .nice(4)
       .range([innerHeight, 0]);
@@ -158,8 +169,7 @@ export default function SpendingTrendChart({
       .attr("stroke-width", 1);
 
     // Y-axis labels
-    const yAxis = d3
-      .axisLeft(yScale)
+    const yAxis = axisLeft(yScale)
       .tickValues(yTicks)
       .tickSize(0)
       .tickPadding(10)
@@ -176,8 +186,7 @@ export default function SpendingTrendChart({
 
     // X-axis 6-month ticks
     const labelByKey = new Map(summary.points.map((p) => [p.key, p.label]));
-    const xAxis = d3
-      .axisBottom(xScale)
+    const xAxis = axisBottom(xScale)
       .tickSize(0)
       .tickPadding(12)
       .tickFormat((key) => labelByKey.get(String(key)) ?? String(key));
@@ -215,23 +224,21 @@ export default function SpendingTrendChart({
 
     // Area + Line when >= 2 months have scans; reference line when 1 month
     if (observed.length >= 2) {
-      const areaGenerator = d3
-        .area<MonthlyTrendPoint & { monthlyTotal: number }>()
+      const areaGenerator = area<MonthlyTrendPoint & { monthlyTotal: number }>()
         .x((d) => xScale(d.key) ?? 0)
         .y0(innerHeight)
         .y1((d) => yScale(d.monthlyTotal))
-        .curve(d3.curveMonotoneX);
+        .curve(curveMonotoneX);
 
       g.append("path")
         .datum(observed)
         .attr("fill", `url(#trend-area-${gradientId})`)
         .attr("d", areaGenerator);
 
-      const lineGenerator = d3
-        .line<MonthlyTrendPoint & { monthlyTotal: number }>()
+      const lineGenerator = line<MonthlyTrendPoint & { monthlyTotal: number }>()
         .x((d) => xScale(d.key) ?? 0)
         .y((d) => yScale(d.monthlyTotal))
-        .curve(d3.curveMonotoneX);
+        .curve(curveMonotoneX);
 
       const linePath = g
         .append("path")
@@ -255,7 +262,7 @@ export default function SpendingTrendChart({
           .attr("stroke-dashoffset", totalLength)
           .transition()
           .duration(360)
-          .ease(d3.easeCubicOut)
+          .ease(easeCubicOut)
           .attr("stroke-dashoffset", 0)
           .on("end", () => {
             linePath.attr("stroke-dasharray", null);

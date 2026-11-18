@@ -1,15 +1,30 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, Check, Lock, Pencil, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Pencil, X } from "lucide-react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import { isMissingColumnError, normalizeStatementName } from "@/lib/scanHistory";
-import Scanner from "@/components/Scanner";
-import PayButton from "@/components/PayButton";
 import AccountActions from "@/components/AccountActions";
 import BrandMark from "@/components/BrandMark";
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
+
+const Scanner = dynamic(() => import("@/components/Scanner"), {
+  ssr: false,
+  loading: () => (
+    <div className="glass-panel scan-progress-banner" style={{ marginTop: 24 }}>
+      <div className="scan-progress-text">
+        <strong>Loading statement scanner…</strong>
+        <span>Preparing your workspace locally in your browser.</span>
+      </div>
+    </div>
+  ),
+});
+
+const PayButton = dynamic(() => import("@/components/PayButton"), {
+  ssr: false,
+});
 
 type Gate =
   | "checking"

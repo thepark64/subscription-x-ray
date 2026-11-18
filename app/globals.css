@@ -1,7 +1,4 @@
 :root {
-  --font-display: "Plus Jakarta Sans";
-  --font-sans: "DM Sans";
-  --font-mono: "JetBrains Mono";
 
   --canvas: #eaf0f6;
   --ink: #0f172a;
@@ -2202,6 +2199,21 @@ footer {
   width: 100%;
   max-width: 440px;
   padding: 36px;
+}
+
+.auth-card-enter {
+  animation: xray-auth-enter 180ms var(--ease-out) both;
+}
+
+@keyframes xray-auth-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-card h1 {

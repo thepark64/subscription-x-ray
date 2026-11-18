@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import {
@@ -166,12 +165,7 @@ export default function LoginClient() {
 
   return (
     <main className="auth-page">
-      <motion.div
-        className="glass-panel auth-card"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      >
+      <div className="glass-panel auth-card auth-card-enter">
         <Link href="/" className="back">
           <ArrowLeft size={16} aria-hidden="true" />
           <BrandMark size={22} />
@@ -320,7 +314,7 @@ export default function LoginClient() {
             </button>
           )}
         </div>
-      </motion.div>
+      </div>
     </main>
   );
 }

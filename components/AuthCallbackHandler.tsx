@@ -2,8 +2,12 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import { extractAuthErrorFromLocation } from "@/lib/authRedirect";
+
+const supabaseConfigured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 /**
  * Handles Supabase Auth email callbacks if Supabase redirects to the root
@@ -39,31 +43,42 @@ export default function AuthCallbackHandler() {
     }
 
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!active) return;
-        if (event === "PASSWORD_RECOVERY") {
-          router.replace("/reset-password");
-          return;
-        }
-        if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-          router.replace("/scanner");
-          router.refresh();
-        }
-      }
-    );
+    (async () => {
+      const { supabase } = await import("@/lib/supabaseClient");
+      if (!active) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+      const { data: listener } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!active) return;
+          if (event === "PASSWORD_RECOVERY") {
+            router.replace("/reset-password");
+            return;
+          }
+          if (
+            session &&
+            (event === "SIGNED_IN" || event === "INITIAL_SESSION")
+          ) {
+            router.replace("/scanner");
+            router.refresh();
+          }
+        }
+      );
+      unsubscribe = () => listener.subscription.unsubscribe();
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (active && session) {
         router.replace("/scanner");
         router.refresh();
       }
-    });
+    })();
 
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, [router]);
 

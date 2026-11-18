@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, LazyMotion, domAnimation, m } from "motion/react";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -40,11 +41,33 @@ import {
 } from "@/lib/subscriptionFilter";
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 import { supabase } from "@/lib/supabaseClient";
-import SpendingTrendChart from "@/components/SpendingTrendChart";
 import ScanHistory, {
   type PastScan,
   type SavedSubscriptionRow,
 } from "@/components/ScanHistory";
+
+const SpendingTrendChart = dynamic(
+  () => import("@/components/SpendingTrendChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="trend-section" aria-label="6-month spending trend">
+        <div className="trend-head">
+          <div>
+            <p className="eyebrow">6-month spending trend</p>
+            <h2>Monthly recurring spend</h2>
+          </div>
+        </div>
+        <div className="glass-panel trend-card" aria-busy="true">
+          <div className="trend-skeleton">
+            <div className="skeleton-bar skeleton-bar-sm" />
+            <div className="skeleton-bar trend-skeleton-chart" />
+          </div>
+        </div>
+      </section>
+    ),
+  }
+);
 
 function normalizeFrequency(freq: string): Frequency {
   if (
@@ -782,7 +805,8 @@ export default function Scanner({
     overviewMonthly !== null ? overviewMonthly * 12 : null;
 
   return (
-    <div className="scanner" aria-busy={busy}>
+    <LazyMotion features={domAnimation}>
+      <div className="scanner" aria-busy={busy}>
       <div className="scanner-header">
         <div>
           <p className="eyebrow">Overview</p>
@@ -903,7 +927,7 @@ export default function Scanner({
               </div>
 
               {(dragging || busy) && (
-                <motion.div
+                <m.div
                   className="dropzone-scan-beam"
                   aria-hidden="true"
                   initial={{ opacity: 0, y: "-10%" }}
@@ -919,7 +943,7 @@ export default function Scanner({
                 />
               )}
 
-              <motion.div
+              <m.div
                 className={`dropzone-icon${busy ? " is-busy" : ""}${dragging ? " is-dragging" : ""}`}
                 aria-hidden="true"
                 animate={
@@ -940,10 +964,10 @@ export default function Scanner({
                 ) : (
                   <Upload size={22} />
                 )}
-              </motion.div>
+              </m.div>
 
               <AnimatePresence mode="wait">
-                <motion.div
+                <m.div
                   key={busy ? phase : dragging ? "dragging" : "idle"}
                   className="dropzone-copy"
                   initial={{ opacity: 0, y: 4 }}
@@ -963,7 +987,7 @@ export default function Scanner({
                       ? phaseInfo?.detail
                       : "Supports CSV and digital bank/card PDFs. Password-protected PDFs are unlocked locally in your browser."}
                   </p>
-                </motion.div>
+                </m.div>
               </AnimatePresence>
 
               {busy && (
@@ -1132,7 +1156,7 @@ export default function Scanner({
           {saveNotice && <div className="notice-box">{saveNotice}</div>}
 
       {!busy && result && (
-        <motion.div
+        <m.div
           ref={resultsRef}
           className="results"
           initial={{ opacity: 0, y: 8 }}
@@ -1363,7 +1387,7 @@ export default function Scanner({
               before you cancel anything.
             </p>
           </div>
-        </motion.div>
+        </m.div>
       )}
 
         </div>
@@ -1411,6 +1435,7 @@ export default function Scanner({
         onOpenInViewer={openPastScanInViewer}
         onRequestScan={() => fileInputRef.current?.click()}
       />
-    </div>
+      </div>
+    </LazyMotion>
   );
 }
