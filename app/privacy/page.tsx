@@ -3,12 +3,36 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SUPPORT_EMAIL } from "@/lib/config";
 
+const PRIVACY_TITLE = "Privacy Policy — Subscription X-Ray";
+const PRIVACY_DESCRIPTION =
+  "Learn how Subscription X-Ray parses CSV and PDF bank statements strictly in browser memory without ever uploading raw files or PDF passwords.";
+
 export const metadata: Metadata = {
-  title: "Privacy Policy — Subscription X-Ray",
-  description:
-    "How Subscription X-Ray processes CSV and PDF statements locally in your browser without uploading raw files or PDF passwords.",
+  title: PRIVACY_TITLE,
+  description: PRIVACY_DESCRIPTION,
   alternates: {
     canonical: "/privacy",
+  },
+  openGraph: {
+    title: PRIVACY_TITLE,
+    siteName: "Subscription X-Ray",
+    description: PRIVACY_DESCRIPTION,
+    type: "website",
+    url: "/privacy",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Subscription X-Ray — Find recurring charges and UPI AutoPay mandates",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: PRIVACY_TITLE,
+    description: PRIVACY_DESCRIPTION,
+    images: ["/twitter-image.png"],
   },
 };
 
@@ -94,6 +118,14 @@ export default function PrivacyPage() {
               revised update date.
             </p>
           </section>
+
+          <nav className="legal-related-links" aria-label="Related pages">
+            <Link href="/">Home</Link>
+            <Link href="/scanner">Statement scanner</Link>
+            <Link href="/login">Sign in</Link>
+            <Link href="/terms">Terms of Service</Link>
+            <Link href="/refund">Refund Policy</Link>
+          </nav>
         </div>
       </div>
     </main>

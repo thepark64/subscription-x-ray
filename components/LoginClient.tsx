@@ -315,6 +315,54 @@ export default function LoginClient() {
           )}
         </div>
       </div>
+
+      <section
+        className="glass-panel auth-info-card"
+        aria-labelledby="login-account-overview"
+      >
+        <h2 id="login-account-overview">
+          What your Subscription X-Ray account includes
+        </h2>
+        <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+          Your account syncs your non-expiring scan credit balance, saved scan
+          summaries, and 6-month recurring spend history across devices — while
+          keeping your raw bank statements strictly in your browser.
+        </p>
+        <ul className="gate-info-list">
+          <li>
+            <strong>₹69 one-time for 12 scans:</strong> Credits never expire,
+            have no renewal fee, and are added automatically after Cashfree
+            verification.
+          </li>
+          <li>
+            <strong>100% browser-side parsing:</strong> Indian bank and credit
+            card CSV or PDF statements (including password-protected bank PDFs)
+            are decoded locally in browser memory. Raw transaction rows and PDF
+            passwords are never uploaded.
+          </li>
+          <li>
+            <strong>Zero-subscription protection:</strong> If a valid bank or
+            card statement yields zero recurring charges, no scan credit is
+            deducted.
+          </li>
+          <li>
+            <strong>UPI AutoPay, NACH &amp; Card SI detection:</strong> View
+            confidence ratings, payment rail badges, merchant cancellation
+            links, step-by-step UPI revoke guides, CSV/PDF exports, and
+            6-month spending trends.
+          </li>
+        </ul>
+        <nav
+          className="legal-related-links"
+          aria-label="Explore Subscription X-Ray"
+        >
+          <Link href="/">Home</Link>
+          <Link href="/scanner">Statement scanner</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/refund">Refunds</Link>
+        </nav>
+      </section>
     </main>
   );
 }

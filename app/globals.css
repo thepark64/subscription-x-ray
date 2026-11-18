@@ -2309,8 +2309,10 @@ footer {
 .auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   padding: 36px 24px;
 }
 
@@ -2318,6 +2320,18 @@ footer {
   width: 100%;
   max-width: 440px;
   padding: 36px;
+}
+
+.auth-info-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 26px 32px;
+}
+
+.auth-info-card h2,
+.gate-info-section h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
 }
 
 .auth-card-enter {
@@ -2386,8 +2400,10 @@ footer {
 .gate-wrap {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   padding: 36px 24px;
 }
 
@@ -2397,6 +2413,10 @@ footer {
   padding: 36px;
 }
 
+.gate-card-wide {
+  max-width: 620px;
+}
+
 .gate-card h1 {
   font-size: 28px;
   margin: 0 0 12px;
@@ -2404,6 +2424,47 @@ footer {
 
 .gate-card .lede {
   margin-bottom: 24px;
+}
+
+.gate-info-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-divider);
+}
+
+.gate-info-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.gate-info-list strong {
+  color: var(--ink);
+}
+
+.legal-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-divider);
+  font-size: 13.5px;
+}
+
+.legal-related-links a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-related-links a:hover {
+  color: var(--ink);
 }
 
 /* Legal Pages */

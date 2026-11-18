@@ -4,14 +4,29 @@ import { Check, Lock } from "lucide-react";
 import AuthCallbackHandler from "@/components/AuthCallbackHandler";
 import BrandMark from "@/components/BrandMark";
 import InteractiveDemo from "@/components/InteractiveDemo";
-import { SITE_URL } from "@/lib/config";
+import { CANONICAL_SITE_URL } from "@/lib/config";
+
+const HOME_TITLE = "Subscription X-Ray — Spot Recurring Charges & Mandates";
+const HOME_DESCRIPTION =
+  "Scan Indian bank or card CSV & PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring charges — ₹69 for 12 scans.";
 
 export const metadata: Metadata = {
-  title: "Subscription X-Ray — Find recurring charges & UPI AutoPay mandates",
-  description:
-    "Scan HDFC, SBI, ICICI, Axis, Kotak, or credit card CSV and PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring subscriptions for ₹69 (12 scans).",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    title: HOME_TITLE,
+    siteName: "Subscription X-Ray",
+    description: HOME_DESCRIPTION,
+    type: "website",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
   },
 };
 
@@ -50,7 +65,7 @@ const STRUCTURED_DATA = {
       name: "Subscription X-Ray",
       applicationCategory: "FinanceApplication",
       operatingSystem: "Web",
-      url: SITE_URL,
+      url: CANONICAL_SITE_URL,
       description:
         "Browser-only Indian bank CSV and PDF statement scanner for recurring subscriptions, UPI AutoPay mandates, and NACH debits.",
       offers: {

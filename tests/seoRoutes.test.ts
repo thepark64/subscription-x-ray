@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
+
+vi.mock("next/font/google", () => ({
+  DM_Sans: () => ({ variable: "--font-sans" }),
+  Plus_Jakarta_Sans: () => ({ variable: "--font-display" }),
+  JetBrains_Mono: () => ({ variable: "--font-mono" }),
+}));
 
 describe("SEO metadata routes", () => {
   it("generates sitemap entries for homepage, login, scanner, and legal pages", () => {
@@ -71,5 +77,88 @@ describe("SEO metadata routes", () => {
     expect(homePage).toContain("₹3,896");
     expect(homePage).not.toContain("3,847");
   });
+
+  it("ensures every public route has unique <=60 title, <=155 description, matching canonical and og:url, and unique social metadata", async () => {
+    const { metadata: layoutMetadata } = await import("@/app/layout");
+    const { metadata: homeMeta } = await import("@/app/page");
+    const { metadata: loginMeta } = await import("@/app/login/page");
+    const { metadata: scannerMeta } = await import("@/app/scanner/page");
+    const { metadata: termsMeta } = await import("@/app/terms/page");
+    const { metadata: privacyMeta } = await import("@/app/privacy/page");
+    const { metadata: refundMeta } = await import("@/app/refund/page");
+
+    expect(layoutMetadata.metadataBase?.toString().replace(/\/+$/, "")).toBe(
+      "https://subscription-x-ray.vercel.app"
+    );
+
+    const routes = [
+      homeMeta,
+      loginMeta,
+      scannerMeta,
+      termsMeta,
+      privacyMeta,
+      refundMeta,
+    ];
+
+    const titles = new Set<string>();
+    const descriptions = new Set<string>();
+    const ogTitles = new Set<string>();
+    const ogDescriptions = new Set<string>();
+    const twTitles = new Set<string>();
+    const twDescriptions = new Set<string>();
+
+    for (const meta of routes) {
+      const title = String(meta.title ?? "");
+      const desc = String(meta.description ?? "");
+      const canonical = String(meta.alternates?.canonical ?? "");
+      const ogUrl = String(meta.openGraph?.url ?? "");
+      const ogTitle = String(meta.openGraph?.title ?? "");
+      const ogDesc = String(meta.openGraph?.description ?? "");
+      const twTitle = String(meta.twitter?.title ?? "");
+      const twDesc = String(meta.twitter?.description ?? "");
+
+      expect(title.length).toBeGreaterThanOrEqual(30);
+      expect(title.length).toBeLessThanOrEqual(60);
+      expect(desc.length).toBeGreaterThanOrEqual(120);
+      expect(desc.length).toBeLessThanOrEqual(155);
+      expect(canonical).toMatch(/^\//);
+      expect(ogUrl).toBe(canonical);
+
+      titles.add(title);
+      descriptions.add(desc);
+      ogTitles.add(ogTitle);
+      ogDescriptions.add(ogDesc);
+      twTitles.add(twTitle);
+      twDescriptions.add(twDesc);
+    }
+
+    expect(titles.size).toBe(routes.length);
+    expect(descriptions.size).toBe(routes.length);
+    expect(ogTitles.size).toBe(routes.length);
+    expect(ogDescriptions.size).toBe(routes.length);
+    expect(twTitles.size).toBe(routes.length);
+    expect(twDescriptions.size).toBe(routes.length);
+
+    const brandMark = readFileSync(
+      path.join(process.cwd(), "components/BrandMark.tsx"),
+      "utf8"
+    );
+    expect(brandMark).toContain('alt = "Subscription X-Ray logo"');
+    expect(brandMark).not.toContain('alt=""');
+
+    const scannerClient = readFileSync(
+      path.join(process.cwd(), "components/ScannerClient.tsx"),
+      "utf8"
+    );
+    expect(scannerClient).toContain("<h1>Statement scanner</h1>");
+    expect(scannerClient).toContain("How browser-only scanning works");
+
+    const loginClient = readFileSync(
+      path.join(process.cwd(), "components/LoginClient.tsx"),
+      "utf8"
+    );
+    expect(loginClient).toContain("What your Subscription X-Ray account includes");
+  });
 });
+
 

@@ -156,10 +156,61 @@ export default function ScannerClient() {
   if (gate === "checking") {
     return (
       <main className="gate-wrap">
-        <div className="glass-panel gate-card">
-          <p className="lede" style={{ marginBottom: 0 }}>
-            Checking your account…
+        <div className="glass-panel gate-card gate-card-wide">
+          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            <BrandMark size={22} />
+            <span>Subscription X-Ray</span>
+          </Link>
+          <h1>Statement scanner</h1>
+          <p className="lede" role="status">
+            Checking your account… If you already have an account, your scan
+            workspace will load automatically.
           </p>
+          <Link className="btn btn-primary" href="/login">
+            Sign in / create account
+          </Link>
+          <section
+            className="gate-info-section"
+            aria-labelledby="scanner-checking-overview"
+          >
+            <h2 id="scanner-checking-overview">
+              How browser-only scanning works
+            </h2>
+            <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+              Subscription X-Ray runs statement parsing and recurring charge
+              analysis locally inside your browser so sensitive financial files
+              and PDF passwords never leave your device.
+            </p>
+            <ul className="gate-info-list">
+              <li>
+                <strong>Supported banks &amp; file formats:</strong> Upload CSV
+                exports, digital bank PDFs, or password-protected PDF statements
+                from HDFC, SBI, ICICI, Axis, Kotak, and major credit card
+                issuers.
+              </li>
+              <li>
+                <strong>Smart noise filtering &amp; mandate labels:</strong>{" "}
+                Automatically excludes failed attempts, UPI reversals, salary
+                credits, and ₹1–₹2 mandate holds while labeling UPI AutoPay,
+                NACH e-mandates, and card standing instructions with confidence
+                scores.
+              </li>
+              <li>
+                <strong>{PACK_PRICE_LABEL} one-time pack:</strong> Unlocks{" "}
+                {PACK_SIZE} non-expiring scan credits with CSV/PDF export and
+                cancellation guides. Valid statements with zero recurring charges
+                never deduct a credit.
+              </li>
+            </ul>
+          </section>
+          <nav className="legal-related-links" aria-label="Scanner navigation">
+            <Link href="/">Home</Link>
+            <Link href="/login">Sign in</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/refund">Refunds</Link>
+          </nav>
         </div>
       </main>
     );
@@ -213,7 +264,7 @@ export default function ScannerClient() {
   if (gate === "needs-login") {
     return (
       <main className="gate-wrap">
-        <div className="glass-panel gate-card">
+        <div className="glass-panel gate-card gate-card-wide">
           <Link href="/" className="back" style={{ marginBottom: 20 }}>
             <ArrowLeft size={16} aria-hidden="true" />
             <BrandMark size={22} />
@@ -221,12 +272,51 @@ export default function ScannerClient() {
           </Link>
           <h1>Sign in to scan your statements</h1>
           <p className="lede">
-            {PACK_PRICE_LABEL} unlocks {PACK_SIZE} scans on your account — sign
-            in or create an account to continue.
+            {PACK_PRICE_LABEL} unlocks {PACK_SIZE} non-expiring scans on your
+            account — sign in or create an account to open the scanner.
           </p>
           <Link className="btn btn-primary" href="/login">
             Sign in / create account
           </Link>
+          <section
+            className="gate-info-section"
+            aria-labelledby="scanner-login-overview"
+          >
+            <h2 id="scanner-login-overview">
+              How browser-only scanning works
+            </h2>
+            <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+              Sign in or create an account to manage your 12-scan credit pack,
+              unlock browser-side CSV and PDF statement scanning, and save scan
+              summaries across visits.
+            </p>
+            <ul className="gate-info-list">
+              <li>
+                <strong>Supported banks &amp; file formats:</strong> CSV
+                exports, digital PDFs, and encrypted bank PDFs from HDFC, SBI,
+                ICICI, Axis, Kotak, and credit cards stay strictly in browser
+                memory.
+              </li>
+              <li>
+                <strong>Mandate rails &amp; revoke guidance:</strong> Surfaces
+                recurring OTT, SaaS, UPI AutoPay mandates, NACH debits, and
+                card standing instructions with Google Pay, PhonePe, Paytm, and
+                bank cancellation steps.
+              </li>
+              <li>
+                <strong>Zero-credit guarantee:</strong> Valid statements with
+                zero detected recurring charges never spend a credit, and your
+                ₹69 scan credits never expire.
+              </li>
+            </ul>
+          </section>
+          <nav className="legal-related-links" aria-label="Scanner navigation">
+            <Link href="/">Home</Link>
+            <Link href="/login">Sign in</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/refund">Refunds</Link>
+          </nav>
         </div>
       </main>
     );

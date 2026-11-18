@@ -3,12 +3,36 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SUPPORT_EMAIL } from "@/lib/config";
 
+const TERMS_TITLE = "Terms of Service — Subscription X-Ray";
+const TERMS_DESCRIPTION =
+  "Read the Subscription X-Ray Terms of Service covering browser-only CSV and PDF statement scanning, ₹69 non-expiring 12-scan packs, and Cashfree.";
+
 export const metadata: Metadata = {
-  title: "Terms of Service — Subscription X-Ray",
-  description:
-    "Terms of Service for Subscription X-Ray covering browser-only CSV/PDF statement scanning, non-expiring ₹69 scan packs, and Cashfree checkout.",
+  title: TERMS_TITLE,
+  description: TERMS_DESCRIPTION,
   alternates: {
     canonical: "/terms",
+  },
+  openGraph: {
+    title: TERMS_TITLE,
+    siteName: "Subscription X-Ray",
+    description: TERMS_DESCRIPTION,
+    type: "website",
+    url: "/terms",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Subscription X-Ray — Find recurring charges and UPI AutoPay mandates",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TERMS_TITLE,
+    description: TERMS_DESCRIPTION,
+    images: ["/twitter-image.png"],
   },
 };
 
@@ -99,6 +123,14 @@ export default function TermsPage() {
               Questions about these terms: {SUPPORT_EMAIL}.
             </p>
           </section>
+
+          <nav className="legal-related-links" aria-label="Related pages">
+            <Link href="/">Home</Link>
+            <Link href="/scanner">Statement scanner</Link>
+            <Link href="/login">Sign in</Link>
+            <Link href="/privacy">Privacy Policy</Link>
+            <Link href="/refund">Refund Policy</Link>
+          </nav>
         </div>
       </div>
     </main>

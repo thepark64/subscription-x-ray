@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-import { SITE_URL } from "@/lib/config";
+import { CANONICAL_SITE_URL } from "@/lib/config";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -23,10 +23,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "Subscription X-Ray — find recurring charges",
+  metadataBase: new URL(CANONICAL_SITE_URL),
+  title: "Subscription X-Ray — Find Recurring Charges",
   description:
-    "Privately scan bank or credit card CSV and PDF statements in your browser to find recurring charges, UPI AutoPay mandates, and forgotten subscriptions.",
+    "Scan Indian bank or card CSV & PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring charges — ₹69 for 12 scans.",
   applicationName: "Subscription X-Ray",
   icons: {
     icon: [
@@ -38,18 +38,18 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
-    title: "Subscription X-Ray",
+    title: "Subscription X-Ray — Find Recurring Charges",
     siteName: "Subscription X-Ray",
     description:
-      "Find recurring charges and UPI AutoPay mandates in your bank or card CSV/PDF statement. Your raw file stays on your device.",
+      "Scan Indian bank or card CSV & PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring charges — ₹69 for 12 scans.",
     type: "website",
-    url: SITE_URL,
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Subscription X-Ray",
+    title: "Subscription X-Ray — Find Recurring Charges",
     description:
-      "Find recurring charges and UPI AutoPay mandates in your bank or card CSV/PDF statement.",
+      "Scan Indian bank or card CSV & PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring charges — ₹69 for 12 scans.",
   },
   verification: {
     google: "lN8dgPoNm_qnJNyMdtCZ-paNz2XToPhWJpec5qVXbyA",
