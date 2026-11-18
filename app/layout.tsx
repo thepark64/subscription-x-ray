@@ -28,8 +28,18 @@ export const metadata: Metadata = {
   description:
     "Privately scan bank or credit card CSV and PDF statements in your browser to find recurring charges, UPI AutoPay mandates, and forgotten subscriptions.",
   applicationName: "Subscription X-Ray",
+  icons: {
+    icon: [
+      { url: "/icon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: [{ url: "/favicon.ico" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "Subscription X-Ray",
+    siteName: "Subscription X-Ray",
     description:
       "Find recurring charges and UPI AutoPay mandates in your bank or card CSV/PDF statement. Your raw file stays on your device.",
     type: "website",
