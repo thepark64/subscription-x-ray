@@ -8,6 +8,10 @@ const SCANNER_DESCRIPTION =
 export const metadata: Metadata = {
   title: SCANNER_TITLE,
   description: SCANNER_DESCRIPTION,
+  robots: {
+    index: false,
+    follow: true,
+  },
   alternates: {
     canonical: "/scanner",
   },

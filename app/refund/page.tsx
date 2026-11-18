@@ -103,6 +103,9 @@ export default function RefundPage() {
           <nav className="legal-related-links" aria-label="Related pages">
             <Link href="/">Home</Link>
             <Link href="/scanner">Statement scanner</Link>
+            <Link href="/guides">Guides</Link>
+            <Link href="/about">About</Link>
+            <Link href="/contact">Contact</Link>
             <Link href="/login">Sign in</Link>
             <Link href="/terms">Terms of Service</Link>
             <Link href="/privacy">Privacy Policy</Link>

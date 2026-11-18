@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
+import { GUIDES } from "@/lib/guides";
 
 vi.mock("next/font/google", () => ({
   DM_Sans: () => ({ variable: "--font-sans" }),
@@ -11,20 +12,27 @@ vi.mock("next/font/google", () => ({
 }));
 
 describe("SEO metadata routes", () => {
-  it("generates sitemap entries for homepage, login, scanner, and legal pages", () => {
+  it("generates sitemap entries strictly for the 13 indexable public pages", () => {
     const entries = sitemap();
     const urls = entries.map((entry) => entry.url);
 
     expect(urls).toEqual([
       "https://subscription-x-ray.vercel.app/",
-      "https://subscription-x-ray.vercel.app/login",
-      "https://subscription-x-ray.vercel.app/scanner",
+      "https://subscription-x-ray.vercel.app/guides",
+      "https://subscription-x-ray.vercel.app/guides/find-upi-autopay-mandates",
+      "https://subscription-x-ray.vercel.app/guides/cancel-upi-autopay",
+      "https://subscription-x-ray.vercel.app/guides/find-hidden-subscriptions",
+      "https://subscription-x-ray.vercel.app/guides/identify-nach-emandate",
+      "https://subscription-x-ray.vercel.app/guides/recurring-card-payments",
+      "https://subscription-x-ray.vercel.app/guides/read-bank-statements",
+      "https://subscription-x-ray.vercel.app/about",
+      "https://subscription-x-ray.vercel.app/contact",
       "https://subscription-x-ray.vercel.app/terms",
       "https://subscription-x-ray.vercel.app/privacy",
       "https://subscription-x-ray.vercel.app/refund",
     ]);
 
-    expect(urls.some((u) => /\/(api|reset-password)/.test(u))).toBe(false);
+    expect(urls.some((u) => /\/(api|login|scanner|reset-password)/.test(u))).toBe(false);
   });
 
   it("configures robots.txt allowing site indexing and pointing to sitemap.xml", () => {
@@ -49,7 +57,6 @@ describe("SEO metadata routes", () => {
 
   it("provides a 96x96 PNG favicon, favicon.ico, and apple-icon.png wired in layout metadata", () => {
     const icon96 = readFileSync(path.join(process.cwd(), "public/icon-96x96.png"));
-    // PNG signature + IHDR width/height bytes (big-endian uint32 at offsets 16 and 20)
     expect(icon96.subarray(0, 8)).toEqual(
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
     );
@@ -57,7 +64,6 @@ describe("SEO metadata routes", () => {
     expect(icon96.readUInt32BE(20)).toBe(96);
 
     const faviconIco = readFileSync(path.join(process.cwd(), "public/favicon.ico"));
-    // ICO header: reserved=0, type=1, count>=1
     expect(faviconIco.readUInt16LE(0)).toBe(0);
     expect(faviconIco.readUInt16LE(2)).toBe(1);
     expect(faviconIco.readUInt16LE(4)).toBeGreaterThanOrEqual(1);
@@ -76,13 +82,24 @@ describe("SEO metadata routes", () => {
     const homePage = readFileSync(path.join(process.cwd(), "app/page.tsx"), "utf8");
     expect(homePage).toContain("₹3,896");
     expect(homePage).not.toContain("3,847");
+    expect(homePage).toContain("10 MB");
   });
 
-  it("ensures every public route has unique <=60 title, <=155 description, matching canonical and og:url, and unique social metadata", async () => {
+  it("ensures all routes have unique <=60 title, <=155 description, matching canonical and og:url, and noindex on gated auth routes", async () => {
     const { metadata: layoutMetadata } = await import("@/app/layout");
     const { metadata: homeMeta } = await import("@/app/page");
+    const { metadata: guidesMeta } = await import("@/app/guides/page");
+    const { metadata: g1Meta } = await import("@/app/guides/find-upi-autopay-mandates/page");
+    const { metadata: g2Meta } = await import("@/app/guides/cancel-upi-autopay/page");
+    const { metadata: g3Meta } = await import("@/app/guides/find-hidden-subscriptions/page");
+    const { metadata: g4Meta } = await import("@/app/guides/identify-nach-emandate/page");
+    const { metadata: g5Meta } = await import("@/app/guides/recurring-card-payments/page");
+    const { metadata: g6Meta } = await import("@/app/guides/read-bank-statements/page");
+    const { metadata: aboutMeta } = await import("@/app/about/page");
+    const { metadata: contactMeta } = await import("@/app/contact/page");
     const { metadata: loginMeta } = await import("@/app/login/page");
     const { metadata: scannerMeta } = await import("@/app/scanner/page");
+    const { metadata: resetMeta } = await import("@/app/reset-password/page");
     const { metadata: termsMeta } = await import("@/app/terms/page");
     const { metadata: privacyMeta } = await import("@/app/privacy/page");
     const { metadata: refundMeta } = await import("@/app/refund/page");
@@ -91,8 +108,21 @@ describe("SEO metadata routes", () => {
       "https://subscription-x-ray.vercel.app"
     );
 
+    expect(loginMeta.robots).toEqual({ index: false, follow: true });
+    expect(scannerMeta.robots).toEqual({ index: false, follow: true });
+    expect(resetMeta.robots).toEqual({ index: false, follow: false });
+
     const routes = [
       homeMeta,
+      guidesMeta,
+      g1Meta,
+      g2Meta,
+      g3Meta,
+      g4Meta,
+      g5Meta,
+      g6Meta,
+      aboutMeta,
+      contactMeta,
       loginMeta,
       scannerMeta,
       termsMeta,
@@ -106,6 +136,7 @@ describe("SEO metadata routes", () => {
     const ogDescriptions = new Set<string>();
     const twTitles = new Set<string>();
     const twDescriptions = new Set<string>();
+    const canonicals = new Set<string>();
 
     for (const meta of routes) {
       const title = String(meta.title ?? "");
@@ -130,6 +161,7 @@ describe("SEO metadata routes", () => {
       ogDescriptions.add(ogDesc);
       twTitles.add(twTitle);
       twDescriptions.add(twDesc);
+      canonicals.add(canonical);
     }
 
     expect(titles.size).toBe(routes.length);
@@ -138,6 +170,20 @@ describe("SEO metadata routes", () => {
     expect(ogDescriptions.size).toBe(routes.length);
     expect(twTitles.size).toBe(routes.length);
     expect(twDescriptions.size).toBe(routes.length);
+    expect(canonicals.size).toBe(routes.length);
+
+    for (const guide of GUIDES) {
+      const filePath = path.join(
+        process.cwd(),
+        "app/guides",
+        guide.slug,
+        "page.tsx"
+      );
+      expect(existsSync(filePath)).toBe(true);
+      for (const rel of guide.relatedSlugs) {
+        expect(GUIDES.some((g) => g.slug === rel)).toBe(true);
+      }
+    }
 
     const brandMark = readFileSync(
       path.join(process.cwd(), "components/BrandMark.tsx"),
@@ -145,6 +191,13 @@ describe("SEO metadata routes", () => {
     );
     expect(brandMark).toContain('alt = "Subscription X-Ray logo"');
     expect(brandMark).not.toContain('alt=""');
+
+    const siteHeader = readFileSync(
+      path.join(process.cwd(), "components/SiteHeader.tsx"),
+      "utf8"
+    );
+    expect(siteHeader).toContain("mobile-nav-toggle");
+    expect(siteHeader).toContain("mobile-nav-drawer");
 
     const scannerClient = readFileSync(
       path.join(process.cwd(), "components/ScannerClient.tsx"),
@@ -160,5 +213,3 @@ describe("SEO metadata routes", () => {
     expect(loginClient).toContain("What your Subscription X-Ray account includes");
   });
 });
-
-

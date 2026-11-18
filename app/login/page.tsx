@@ -8,6 +8,10 @@ const LOGIN_DESCRIPTION =
 export const metadata: Metadata = {
   title: LOGIN_TITLE,
   description: LOGIN_DESCRIPTION,
+  robots: {
+    index: false,
+    follow: true,
+  },
   alternates: {
     canonical: "/login",
   },

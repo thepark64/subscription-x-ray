@@ -358,6 +358,9 @@ export default function LoginClient() {
         >
           <Link href="/">Home</Link>
           <Link href="/scanner">Statement scanner</Link>
+          <Link href="/guides">Guides</Link>
+          <Link href="/about">About</Link>
+          <Link href="/contact">Contact</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/refund">Refunds</Link>

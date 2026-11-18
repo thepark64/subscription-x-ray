@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, Lock } from "lucide-react";
+import { ArrowRight, Check, Lock } from "lucide-react";
 import AuthCallbackHandler from "@/components/AuthCallbackHandler";
-import BrandMark from "@/components/BrandMark";
 import InteractiveDemo from "@/components/InteractiveDemo";
-import { CANONICAL_SITE_URL } from "@/lib/config";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
+import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
+import { GUIDES } from "@/lib/guides";
 
-const HOME_TITLE = "Subscription X-Ray — Spot Recurring Charges & Mandates";
+const HOME_TITLE = "Find Recurring Payments & AutoPay | Subscription X-Ray";
 const HOME_DESCRIPTION =
-  "Scan Indian bank or card CSV & PDF statements privately in your browser. Spot UPI AutoPay mandates and recurring charges — ₹69 for 12 scans.";
+  "Scan Indian bank or card CSV & PDF statements in your browser to find recurring payments, UPI AutoPay mandates, and NACH debits — ₹69 for 12 scans.";
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -44,16 +46,20 @@ const FAQ_ITEMS = [
     a: "Yes. CSV and PDF parsing — including unlocking password-protected bank PDFs — happens strictly inside your browser. Your raw statement file and PDF password are never uploaded to or stored on any server.",
   },
   {
-    q: "Which Indian banks and file formats work?",
-    a: "Standard CSV and digital PDF statements from HDFC, SBI, ICICI, Axis, Kotak, and major credit cards. Failed attempts, reversals, refunds, and ₹1–₹2 mandate setup holds are filtered automatically.",
+    q: "Which Indian banks, file formats, and payment rails are supported?",
+    a: "Delimited CSV exports (up to 10 MB and 100,000 rows) and digital or password-protected PDFs from HDFC, SBI, ICICI, Axis, Kotak, and major credit cards. It labels UPI AutoPay mandates, NACH e-mandates, recurring card standing instructions, and regular OTT or SaaS charges while filtering failed attempts, reversals, refunds, and ₹1–₹5 mandate verification holds.",
+  },
+  {
+    q: "What are the scanner's limitations?",
+    a: "Scanned image-only PDFs without selectable text cannot be read — export a digital PDF or CSV from NetBanking instead. Detection uses interval and amount heuristics over multiple cycles to surface likely subscriptions and possible recurring transfers, so a single 30-day export will not confirm monthly or annual plans, and repeated manual UPI transfers can match recurring rules. Always verify before cancelling.",
   },
   {
     q: "What do I get for ₹69?",
     a: "One-time ₹69 adds 12 scan credits to your account. Credits never expire and there is no recurring subscription on our side. If a valid statement has zero recurring charges, no credit is deducted.",
   },
   {
-    q: "Can it cancel UPI AutoPay mandates or subscriptions?",
-    a: "We don't connect to your bank login or auto-cancel on your behalf. For each detected charge, you get direct merchant manage links plus step-by-step Google Pay, PhonePe, Paytm, BHIM, and bank e-Mandate cancellation steps.",
+    q: "Can Subscription X-Ray cancel UPI AutoPay mandates or subscriptions?",
+    a: "No. We do not connect to your bank login or auto-cancel mandates on your behalf. For detected charges, you get direct merchant account links plus step-by-step Google Pay, PhonePe, Paytm, BHIM, NACH, and RBI SI Hub revocation guidance.",
   },
 ];
 
@@ -61,13 +67,19 @@ const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebSite",
+      name: "Subscription X-Ray",
+      url: CANONICAL_SITE_URL,
+      inLanguage: "en-IN",
+    },
+    {
       "@type": "SoftwareApplication",
       name: "Subscription X-Ray",
       applicationCategory: "FinanceApplication",
       operatingSystem: "Web",
       url: CANONICAL_SITE_URL,
       description:
-        "Browser-only Indian bank CSV and PDF statement scanner for recurring subscriptions, UPI AutoPay mandates, and NACH debits.",
+        "Browser-only Indian bank and card CSV and PDF statement scanner to find recurring payments, UPI AutoPay mandates, NACH debits, and recurring card standing instructions.",
       offers: {
         "@type": "Offer",
         price: "69",
@@ -97,45 +109,23 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
       />
       <AuthCallbackHandler />
-      <header className="topbar-wrap">
-        <div className="wrap navrow">
-          <Link
-            href="/"
-            className="brand-wordmark"
-            aria-label="Subscription X-Ray home"
-          >
-            <BrandMark size={32} />
-            <span>Subscription X-Ray</span>
-          </Link>
-
-          <nav className="navlinks" aria-label="Primary navigation">
-            <a href="#how">How it works</a>
-            <a href="#demo">Sample scan</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#faq">FAQ</a>
-          </nav>
-
-          <div className="nav-action">
-            <Link className="btn btn-primary btn-sm" href="/scanner">
-              Open scanner
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader mode="home" />
 
       <main>
         <div className="wrap">
           <div className="hero">
             <div className="hero-copy">
-              <h1>See what&apos;s quietly leaving your account every month.</h1>
+              <h1>
+                Find Recurring Payments and UPI AutoPay Mandates in India
+              </h1>
               <p className="lede">
-                Drop in an Indian bank or card CSV or PDF statement.
-                Subscription X-Ray detects recurring charges, UPI AutoPay
-                mandates, and NACH debits in seconds — entirely in your browser.
+                Scan your bank statement to identify recurring subscriptions,
+                UPI AutoPay mandates and automatic payments you may have
+                forgotten.
               </p>
               <div className="cta-row">
                 <Link className="btn btn-primary" href="/scanner">
-                  Scan my statements — ₹69
+                  Scan my statements — {PACK_PRICE_LABEL}
                 </Link>
                 <a className="btn btn-ghost" href="#demo">
                   Try interactive sample
@@ -144,8 +134,8 @@ export default function Home() {
               <div className="trust-note">
                 <Lock size={14} strokeWidth={2.2} aria-hidden="true" />
                 <span>
-                  CSV &amp; PDF files (including encrypted PDFs) stay on your
-                  device — never uploaded to a server.
+                  CSV &amp; PDF files (including encrypted PDFs) stay in browser
+                  memory — never uploaded to a server.
                 </span>
               </div>
             </div>
@@ -154,7 +144,7 @@ export default function Home() {
               <div className="statline">
                 <div className="figure">
                   ₹3,896
-                  <small>found leaving your account monthly</small>
+                  <small>synthetic sample monthly recurring total</small>
                 </div>
               </div>
               <div className="preview-rows">
@@ -178,31 +168,75 @@ export default function Home() {
           <div className="wrap">
             <div className="section-header">
               <p className="eyebrow">How it works</p>
-              <h2>Three steps to see everything recurring</h2>
+              <h2>
+                Built for Indian bank statements, UPI AutoPay &amp; NACH debits
+              </h2>
             </div>
             <div className="glass-panel steps-glass">
               <div className="step">
-                <div className="n">01. Account & pack</div>
-                <h3>Create an account & pay once</h3>
+                <div className="n">01. Account &amp; pack</div>
+                <h3>Create an account &amp; pay once</h3>
                 <p>
-                  ₹69 unlocks 12 scans — check every card, bank account, or PDF
-                  statement whenever you want.
+                  {PACK_PRICE_LABEL} unlocks {PACK_SIZE} non-expiring scan
+                  credits — check bank accounts and credit card statements
+                  whenever you need without a recurring subscription.
                 </p>
               </div>
               <div className="step">
                 <div className="n">02. Local parse</div>
                 <h3>Drop in your CSV or PDF</h3>
                 <p>
-                  Your statement (even password-protected PDFs) is parsed
-                  locally in your browser. Nothing raw is ever uploaded.
+                  Your statement (including password-protected bank PDFs) is
+                  parsed locally in your browser to surface hidden subscriptions
+                  in bank statements without uploading raw rows.
                 </p>
               </div>
               <div className="step">
-                <div className="n">03. Review & act</div>
-                <h3>See mandates & cancel steps</h3>
+                <div className="n">03. Review &amp; act</div>
+                <h3>Inspect mandates &amp; cancel steps</h3>
                 <p>
-                  Recurring charges show confidence scores, UPI AutoPay or NACH
-                  labels, and step-by-step revocation guidance.
+                  Detected entries label{" "}
+                  <Link href="/guides/find-upi-autopay-mandates">
+                    UPI AutoPay detection
+                  </Link>
+                  ,{" "}
+                  <Link href="/guides/identify-nach-emandate">
+                    NACH and eMandate transactions
+                  </Link>
+                  , or{" "}
+                  <Link href="/guides/recurring-card-payments">
+                    recurring card payments
+                  </Link>{" "}
+                  with confidence scores and cancellation links.
+                </p>
+              </div>
+            </div>
+
+            <div className="glass-panel formats-panel">
+              <div className="formats-col">
+                <h3>Supported file formats &amp; billing cycles</h3>
+                <p>
+                  Reads delimited CSV files (comma, semicolon, tab, or pipe up
+                  to 10 MB and 100,000 rows) plus digital and
+                  password-protected PDF statements (up to 10 MB) from major
+                  Indian banks and credit cards. Detects weekly, monthly,
+                  quarterly, and annual billing cycles while filtering reversals,
+                  refunds, and ₹1–₹5 setup holds.
+                </p>
+              </div>
+              <div className="formats-col">
+                <h3>Important detection limitations</h3>
+                <p>
+                  Image-only scanned PDFs without selectable text are not
+                  supported — export a CSV or digital PDF instead. Because
+                  matching relies on date intervals and amounts across 2+ cycles
+                  (scoring results as High, Medium, or Possible recurring),
+                  export 3–12 months of history and verify every flagged merchant
+                  before following{" "}
+                  <Link href="/guides/cancel-upi-autopay">
+                    UPI AutoPay cancellation steps
+                  </Link>
+                  .
                 </p>
               </div>
             </div>
@@ -213,7 +247,9 @@ export default function Home() {
           <div className="wrap">
             <div className="section-header">
               <p className="eyebrow">Interactive preview</p>
-              <h2>See how detection works before you pay</h2>
+              <h2>
+                Test recurring payment detection on synthetic Indian statements
+              </h2>
             </div>
             <InteractiveDemo />
           </div>
@@ -226,23 +262,25 @@ export default function Home() {
                 <p className="eyebrow">Pricing</p>
                 <h2>One payment. Twelve scans.</h2>
                 <p className="lede">
-                  No subscription, nothing recurring on our side — pay ₹69 once
-                  and get 12 scans that never expire. Zero-subscription scans
-                  never use a credit.
+                  No subscription, nothing recurring on our side — pay{" "}
+                  {PACK_PRICE_LABEL} once and get {PACK_SIZE} scans that never
+                  expire. A lightweight subscription tracker in India should not
+                  add another monthly charge.
                 </p>
               </div>
 
               <div className="glass-panel plan">
                 <div className="plan-title">12-scan pack</div>
                 <div className="price">
-                  ₹69<span> one-time</span>
+                  {PACK_PRICE_LABEL}
+                  <span> one-time</span>
                 </div>
                 <ul>
                   <li>
                     <Check size={16} className="plan-check" aria-hidden="true" />
                     <span>
-                      12 statement scans, use anytime — this month, next month,
-                      whenever
+                      {PACK_SIZE} statement scans, use anytime — this month,
+                      next month, whenever
                     </span>
                   </li>
                   <li>
@@ -255,13 +293,16 @@ export default function Home() {
                   <li>
                     <Check size={16} className="plan-check" aria-hidden="true" />
                     <span>
-                      Confidence badges, UPI AutoPay detection &amp; revoke
-                      guides
+                      Confidence ratings, UPI AutoPay / NACH / Card SI labels
+                      &amp; revoke steps
                     </span>
                   </li>
                   <li>
                     <Check size={16} className="plan-check" aria-hidden="true" />
-                    <span>Runs entirely in your browser — nothing uploaded</span>
+                    <span>
+                      CSV &amp; PDF files are parsed strictly in your browser —
+                      raw statements never uploaded
+                    </span>
                   </li>
                   <li>
                     <Check size={16} className="plan-check" aria-hidden="true" />
@@ -271,13 +312,46 @@ export default function Home() {
                   </li>
                 </ul>
                 <Link className="btn btn-primary full" href="/scanner">
-                  Create account & pay ₹69
+                  Create account &amp; pay {PACK_PRICE_LABEL}
                 </Link>
                 <p className="small-note">
-                  Each payment adds 12 scans to your account — they don&apos;t
-                  expire.
+                  Each payment adds {PACK_SIZE} scans to your account — they
+                  don&apos;t expire.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="guides" className="landing-section">
+          <div className="wrap">
+            <div className="guides-section-head">
+              <div>
+                <p className="eyebrow">Statement guides</p>
+                <h2>Decode automatic bank payments before you cancel</h2>
+              </div>
+              <Link href="/guides" className="text-link">
+                View all {GUIDES.length} guides
+              </Link>
+            </div>
+            <div className="guides-grid">
+              {GUIDES.map((guide) => (
+                <article className="glass-panel guide-card" key={guide.slug}>
+                  <div className="guide-card-meta">
+                    <span>{guide.category}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{guide.readTime}</span>
+                  </div>
+                  <h3>
+                    <Link href={guide.href}>{guide.title}</Link>
+                  </h3>
+                  <p>{guide.summary}</p>
+                  <Link href={guide.href} className="guide-card-link">
+                    <span>Read guide</span>
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </Link>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -300,19 +374,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer>
-        <div className="footer-inner">
-          <span>
-            Subscription X-Ray · Built to find money you forgot you were
-            spending.
-          </span>
-          <div className="footer-links">
-            <Link href="/terms">Terms</Link>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/refund">Refunds</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

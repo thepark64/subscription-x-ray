@@ -1,43 +1,55 @@
 import type { MetadataRoute } from "next";
-
-const BASE_URL = "https://subscription-x-ray.vercel.app";
+import { CANONICAL_SITE_URL } from "@/lib/config";
+import { GUIDES } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const lastModified = new Date("2026-11-18T00:00:00.000Z");
 
   return [
     {
-      url: `${BASE_URL}/`,
+      url: `${CANONICAL_SITE_URL}/`,
       lastModified,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${BASE_URL}/login`,
+      url: `${CANONICAL_SITE_URL}/guides`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    ...GUIDES.map((guide) => ({
+      url: `${CANONICAL_SITE_URL}${guide.href}`,
+      lastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.85,
+    })),
+    {
+      url: `${CANONICAL_SITE_URL}/about`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/scanner`,
+      url: `${CANONICAL_SITE_URL}/contact`,
       lastModified,
-      changeFrequency: "weekly",
-      priority: 0.8,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
-      url: `${BASE_URL}/terms`,
+      url: `${CANONICAL_SITE_URL}/terms`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/privacy`,
+      url: `${CANONICAL_SITE_URL}/privacy`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/refund`,
+      url: `${CANONICAL_SITE_URL}/refund`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.4,

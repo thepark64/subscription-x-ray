@@ -206,6 +206,9 @@ export default function ScannerClient() {
           </section>
           <nav className="legal-related-links" aria-label="Scanner navigation">
             <Link href="/">Home</Link>
+            <Link href="/guides">Guides</Link>
+            <Link href="/about">About</Link>
+            <Link href="/contact">Contact</Link>
             <Link href="/login">Sign in</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/privacy">Privacy</Link>
@@ -312,6 +315,9 @@ export default function ScannerClient() {
           </section>
           <nav className="legal-related-links" aria-label="Scanner navigation">
             <Link href="/">Home</Link>
+            <Link href="/guides">Guides</Link>
+            <Link href="/about">About</Link>
+            <Link href="/contact">Contact</Link>
             <Link href="/login">Sign in</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/privacy">Privacy</Link>
