@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   area,
   axisBottom,
@@ -14,7 +14,12 @@ import {
   select,
   transition,
 } from "d3";
-import { TrendingDown, TrendingUp, Minus, Upload } from "lucide-react";
+import {
+  Minus,
+  TrendDown,
+  TrendUp,
+  UploadSimple,
+} from "@phosphor-icons/react";
 import {
   buildSixMonthTrend,
   type MonthlyTrendPoint,
@@ -59,7 +64,6 @@ export default function SpendingTrendChart({
 }: SpendingTrendChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const gradientId = useId().replace(/:/g, "");
 
   const [width, setWidth] = useState(0);
   const [activePoint, setActivePoint] = useState<MonthlyTrendPoint | null>(null);
@@ -109,27 +113,6 @@ export default function SpendingTrendChart({
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("width", width)
       .attr("height", height);
-
-    const defs = svg.append("defs");
-    const areaGradient = defs
-      .append("linearGradient")
-      .attr("id", `trend-area-${gradientId}`)
-      .attr("x1", "0%")
-      .attr("y1", "0%")
-      .attr("x2", "0%")
-      .attr("y2", "100%");
-
-    areaGradient
-      .append("stop")
-      .attr("offset", "0%")
-      .attr("stop-color", "var(--teal)")
-      .attr("stop-opacity", 0.28);
-
-    areaGradient
-      .append("stop")
-      .attr("offset", "100%")
-      .attr("stop-color", "var(--teal)")
-      .attr("stop-opacity", 0.01);
 
     const g = svg
       .append("g")
@@ -232,7 +215,8 @@ export default function SpendingTrendChart({
 
       g.append("path")
         .datum(observed)
-        .attr("fill", `url(#trend-area-${gradientId})`)
+        .attr("fill", "var(--teal)")
+        .attr("fill-opacity", 0.1)
         .attr("d", areaGenerator);
 
       const lineGenerator = line<MonthlyTrendPoint & { monthlyTotal: number }>()
@@ -374,7 +358,7 @@ export default function SpendingTrendChart({
       .on("mouseenter", (_event, d) => showPoint(d))
       .on("focus", (_event, d) => showPoint(d))
       .on("blur", () => clearPoint());
-  }, [gradientId, loading, summary, width]);
+  }, [loading, summary, width]);
 
   const deltaLabel = useMemo(() => {
     if (summary.deltaAmount === null) return null;
@@ -443,10 +427,10 @@ export default function SpendingTrendChart({
                 <span aria-hidden="true">·</span>
                 <span className={`trend-delta is-${deltaLabel.dir}`}>
                   {deltaLabel.dir === "up" && (
-                    <TrendingUp size={14} aria-hidden="true" />
+                    <TrendUp size={14} aria-hidden="true" />
                   )}
                   {deltaLabel.dir === "down" && (
-                    <TrendingDown size={14} aria-hidden="true" />
+                    <TrendDown size={14} aria-hidden="true" />
                   )}
                   {deltaLabel.dir === "flat" && (
                     <Minus size={14} aria-hidden="true" />
@@ -471,10 +455,10 @@ export default function SpendingTrendChart({
           {onRequestScan && !locked && (
             <button
               type="button"
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-sm"
               onClick={onRequestScan}
             >
-              <Upload size={15} aria-hidden="true" />
+              <UploadSimple size={15} aria-hidden="true" />
               <span>Choose CSV / PDF</span>
             </button>
           )}

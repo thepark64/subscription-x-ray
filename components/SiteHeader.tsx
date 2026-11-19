@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
 import BrandMark from "@/components/BrandMark";
 
 export default function SiteHeader({
@@ -10,127 +10,190 @@ export default function SiteHeader({
 }: {
   mode?: "home" | "content";
 }) {
+  const pathname = usePathname() || "/";
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!menuOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setMenuOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    if (href === "/guides") {
+      return pathname === "/guides" || pathname.startsWith("/guides/");
+    }
+    return pathname === href;
+  };
+
+  const desktopLinks =
+    mode === "home"
+      ? [
+          { href: "#how", label: "How it works", isAnchor: true },
+          { href: "#demo", label: "Sample scan", isAnchor: true },
+          { href: "#pricing", label: "Pricing", isAnchor: true },
+          { href: "/guides", label: "Guides", isAnchor: false },
+          { href: "/about", label: "About", isAnchor: false },
+        ]
+      : [
+          { href: "/", label: "Home", isAnchor: false },
+          { href: "/guides", label: "Guides", isAnchor: false },
+          { href: "/about", label: "About", isAnchor: false },
+          { href: "/contact", label: "Contact", isAnchor: false },
+          { href: "/#pricing", label: "Pricing", isAnchor: false },
+        ];
+
+  const mobileLinks =
+    mode === "home"
+      ? [
+          { href: "#how", label: "How it works", isAnchor: true },
+          { href: "#demo", label: "Sample scan", isAnchor: true },
+          { href: "#pricing", label: "Pricing", isAnchor: true },
+          { href: "/guides", label: "Statement guides", isAnchor: false },
+          { href: "/about", label: "About", isAnchor: false },
+          { href: "/contact", label: "Contact", isAnchor: false },
+        ]
+      : [
+          { href: "/", label: "Home", isAnchor: false },
+          { href: "/guides", label: "Statement guides", isAnchor: false },
+          { href: "/about", label: "About", isAnchor: false },
+          { href: "/contact", label: "Contact", isAnchor: false },
+          { href: "/#pricing", label: "Pricing", isAnchor: false },
+          { href: "/scanner", label: "Open scanner", isAnchor: false },
+        ];
+
   return (
-    <header className="topbar-wrap">
-      <div className="wrap navrow">
-        <Link
-          href="/"
-          className="brand-wordmark"
-          aria-label="Subscription X-Ray home"
-          onClick={closeMenu}
-        >
-          <BrandMark size={32} />
-          <span>Subscription X-Ray</span>
-        </Link>
-
-        <nav className="navlinks" aria-label="Primary navigation">
-          {mode === "home" ? (
-            <>
-              <a href="#how">How it works</a>
-              <a href="#demo">Sample scan</a>
-              <a href="#pricing">Pricing</a>
-              <Link href="/guides">Guides</Link>
-              <Link href="/about">About</Link>
-            </>
-          ) : (
-            <>
-              <Link href="/">Home</Link>
-              <Link href="/guides">Guides</Link>
-              <Link href="/about">About</Link>
-              <Link href="/contact">Contact</Link>
-              <Link href="/#pricing">Pricing</Link>
-            </>
-          )}
-        </nav>
-
-        <div className="nav-action">
+    <>
+      <header className="topbar-wrap">
+        <div className="floating-nav" role="banner">
           <Link
-            className="btn btn-primary btn-sm"
-            href="/scanner"
+            href="/"
+            className="brand-wordmark title-4"
+            aria-label="Subscription X-Ray home"
             onClick={closeMenu}
           >
-            Open scanner
+            <BrandMark size={28} />
+            <span>Subscription X-Ray</span>
           </Link>
-          <button
-            type="button"
-            className="mobile-nav-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav-drawer"
-            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            {menuOpen ? (
-              <X size={20} aria-hidden="true" />
-            ) : (
-              <Menu size={20} aria-hidden="true" />
-            )}
-          </button>
-        </div>
-      </div>
 
-      {menuOpen && (
-        <nav
-          id="mobile-nav-drawer"
-          className="mobile-nav-drawer"
-          aria-label="Mobile navigation"
-        >
-          <div className="wrap mobile-nav-list">
-            {mode === "home" ? (
-              <>
-                <a href="#how" onClick={closeMenu}>
-                  How it works
+          <nav className="navlinks" aria-label="Primary navigation">
+            {desktopLinks.map((item) =>
+              item.isAnchor ? (
+                <a key={item.href} href={item.href} className="title-4">
+                  {item.label}
                 </a>
-                <a href="#demo" onClick={closeMenu}>
-                  Sample scan
-                </a>
-                <a href="#pricing" onClick={closeMenu}>
-                  Pricing
-                </a>
-                <Link href="/guides" onClick={closeMenu}>
-                  Statement guides
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`title-4${isActive(item.href) ? " is-current" : ""}`}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                >
+                  {item.label}
                 </Link>
-                <Link href="/about" onClick={closeMenu}>
-                  About
-                </Link>
-                <Link href="/contact" onClick={closeMenu}>
-                  Contact
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/" onClick={closeMenu}>
-                  Home
-                </Link>
-                <Link href="/guides" onClick={closeMenu}>
-                  Statement guides
-                </Link>
-                <Link href="/about" onClick={closeMenu}>
-                  About
-                </Link>
-                <Link href="/contact" onClick={closeMenu}>
-                  Contact
-                </Link>
-                <Link href="/#pricing" onClick={closeMenu}>
-                  Pricing
-                </Link>
-              </>
+              )
             )}
+          </nav>
+
+          <div className="nav-action">
+            <Link
+              className="btn btn-primary button-sm nav-cta"
+              href="/scanner"
+              onClick={closeMenu}
+            >
+              Open scanner
+            </Link>
+            <button
+              type="button"
+              className={`mobile-nav-toggle${menuOpen ? " is-open" : ""}`}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav-drawer"
+              aria-label={
+                menuOpen ? "Close navigation menu" : "Open navigation menu"
+              }
+              onClick={() => setMenuOpen((prev) => !prev)}
+            >
+              <span className="menu-bars" aria-hidden="true">
+                <span className="menu-bar menu-bar-top" />
+                <span className="menu-bar menu-bar-bottom" />
+              </span>
+            </button>
           </div>
-        </nav>
-      )}
-    </header>
+        </div>
+      </header>
+
+      <nav
+        id="mobile-nav-drawer"
+        className={`mobile-nav-drawer${menuOpen ? " is-open" : ""}`}
+        aria-label="Mobile navigation"
+        aria-hidden={!menuOpen}
+      >
+        <div className="mobile-nav-inner">
+          <div className="mobile-nav-list">
+            {mobileLinks.map((item, idx) => {
+              const delayMs = Math.min(idx * 60, 360);
+              const style = {
+                transitionDelay: menuOpen ? `${delayMs}ms` : "0ms",
+              };
+              const active = !item.isAnchor && isActive(item.href);
+
+              return item.isAnchor ? (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="mobile-nav-link heading-5"
+                  style={style}
+                  tabIndex={menuOpen ? 0 : -1}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`mobile-nav-link heading-5${active ? " is-current" : ""}`}
+                  aria-current={active ? "page" : undefined}
+                  style={style}
+                  tabIndex={menuOpen ? 0 : -1}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div
+            className="mobile-nav-footer"
+            style={{
+              transitionDelay: menuOpen ? "380ms" : "0ms",
+            }}
+          >
+            <Link
+              className="btn btn-primary button-md full"
+              href="/scanner"
+              tabIndex={menuOpen ? 0 : -1}
+              onClick={closeMenu}
+            >
+              Scan my statement for ₹69
+            </Link>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 }

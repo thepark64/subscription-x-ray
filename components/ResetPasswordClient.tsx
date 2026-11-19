@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft, WarningCircle } from "@phosphor-icons/react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import BrandMark from "@/components/BrandMark";
 
@@ -51,6 +51,10 @@ export default function ResetPasswordClient() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
     setError("");
     setLoading(true);
     const { error: updateError } = await supabase.auth.updateUser({ password });
@@ -64,8 +68,8 @@ export default function ResetPasswordClient() {
 
   if (linkStatus === "checking") {
     return (
-      <main className="auth-page">
-        <div className="glass-panel auth-card">
+      <main id="main-content" className="auth-page">
+        <div className="surface-card auth-card">
           <p className="lede">Checking your reset link…</p>
         </div>
       </main>
@@ -74,12 +78,12 @@ export default function ResetPasswordClient() {
 
   if (linkStatus === "invalid") {
     return (
-      <main className="auth-page">
-        <div className="glass-panel auth-card">
+      <main id="main-content" className="auth-page">
+        <div className="surface-card auth-card">
           <h1>This link didn&apos;t work</h1>
           <p className="lede" style={{ marginBottom: 24 }}>
-            It may have expired (reset links are time-limited) or already been
-            used. Request a fresh one from the sign-in page.
+            It may have expired or already been used. Request a fresh reset link
+            from the sign in page.
           </p>
           <button
             className="btn btn-primary full"
@@ -94,8 +98,8 @@ export default function ResetPasswordClient() {
 
   if (done) {
     return (
-      <main className="auth-page">
-        <div className="glass-panel auth-card">
+      <main id="main-content" className="auth-page">
+        <div className="surface-card auth-card">
           <h1>Password updated</h1>
           <p className="lede" style={{ marginBottom: 24 }}>
             You can now sign in with your new password.
@@ -112,8 +116,8 @@ export default function ResetPasswordClient() {
   }
 
   return (
-    <main className="auth-page">
-      <div className="glass-panel auth-card auth-card-enter">
+    <main id="main-content" className="auth-page">
+      <div className="surface-card auth-card auth-card-enter">
         <Link href="/" className="back">
           <ArrowLeft size={16} aria-hidden="true" />
           <BrandMark size={22} />
@@ -135,7 +139,7 @@ export default function ResetPasswordClient() {
           </div>
           {error && (
             <div className="error-box" role="alert">
-              <AlertCircle
+              <WarningCircle
                 size={16}
                 style={{ flexShrink: 0, marginTop: 2 }}
                 aria-hidden="true"

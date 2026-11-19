@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft, WarningCircle } from "@phosphor-icons/react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import {
   extractAuthErrorFromLocation,
@@ -70,6 +70,16 @@ export default function LoginClient() {
       setError(
         "Supabase is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables."
       );
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address before submitting.");
+      return;
+    }
+    if (mode !== "forgot" && password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -164,8 +174,8 @@ export default function LoginClient() {
   }
 
   return (
-    <main className="auth-page">
-      <div className="glass-panel auth-card auth-card-enter">
+    <main id="main-content" className="auth-page">
+      <div className="surface-card auth-card auth-card-enter">
         <Link href="/" className="back">
           <ArrowLeft size={16} aria-hidden="true" />
           <BrandMark size={22} />
@@ -186,7 +196,7 @@ export default function LoginClient() {
 
         {!supabaseConfigured && (
           <div className="error-box" role="alert">
-            <AlertCircle
+            <WarningCircle
               size={16}
               style={{ flexShrink: 0, marginTop: 2 }}
               aria-hidden="true"
@@ -250,7 +260,7 @@ export default function LoginClient() {
 
           {error && (
             <div className="error-box" role="alert">
-              <AlertCircle
+              <WarningCircle
                 size={16}
                 style={{ flexShrink: 0, marginTop: 2 }}
                 aria-hidden="true"
@@ -323,7 +333,7 @@ export default function LoginClient() {
         <h2 id="login-account-overview">
           What your Subscription X-Ray account includes
         </h2>
-        <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+        <p className="gate-info-lede body-6">
           Your account syncs your non-expiring scan credit balance, saved scan
           summaries, and 6-month recurring spend history across devices — while
           keeping your raw bank statements strictly in your browser.

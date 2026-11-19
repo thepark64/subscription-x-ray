@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/ssr";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
@@ -78,38 +78,40 @@ export default function GuidesIndexPage() {
       />
       <SiteHeader mode="content" />
 
-      <main className="guide-page guide-index-page">
+      <main id="main-content" className="guide-page guide-index-page">
         <div className="wrap">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <ChevronRight size={14} aria-hidden="true" />
+            <CaretRight size={14} aria-hidden="true" />
             <span aria-current="page">Guides</span>
           </nav>
 
           <div className="guides-hero">
-            <p className="eyebrow">Practical Indian banking guides</p>
-            <h1>Recurring Payments, UPI AutoPay &amp; Statement Guides</h1>
-            <p className="lede">
-              Clear explanations of how UPI AutoPay, NACH e-Mandates, and card
-              Standing Instructions show up on Indian bank statements — and how
-              to verify or revoke them directly with your bank or UPI app.
+            <p className="eyebrow caption-3">Practical Indian banking guides</p>
+            <h1 className="heading-3">
+              Recurring Payments, UPI AutoPay &amp; Statement Guides
+            </h1>
+            <p className="lede body-3">
+              Clear explanations of how UPI AutoPay, NACH eMandates, and card
+              Standing Instructions appear on Indian bank statements and how to
+              verify or revoke them directly with your bank or UPI app.
             </p>
           </div>
 
           <section aria-label="Guide directory">
             <div className="guides-grid">
               {GUIDES.map((guide) => (
-                <article className="glass-panel guide-card" key={guide.slug}>
-                  <div className="guide-card-meta">
+                <article className="surface-card guide-card" key={guide.slug}>
+                  <div className="guide-card-meta caption-4">
                     <span>{guide.category}</span>
                     <span aria-hidden="true">·</span>
                     <span>{guide.readTime}</span>
                   </div>
-                  <h2>
+                  <h2 className="title-2">
                     <Link href={guide.href}>{guide.title}</Link>
                   </h2>
-                  <p>{guide.summary}</p>
-                  <Link href={guide.href} className="guide-card-link">
+                  <p className="body-6">{guide.summary}</p>
+                  <Link href={guide.href} className="guide-card-link title-4">
                     <span>Read guide</span>
                     <ArrowRight size={14} aria-hidden="true" />
                   </Link>
@@ -118,24 +120,26 @@ export default function GuidesIndexPage() {
             </div>
           </section>
 
-          <aside className="guide-cta-box" style={{ marginTop: 40 }}>
+          <aside className="guide-cta-box guides-index-cta">
             <div className="guide-cta-copy">
-              <h2>Prefer scanning your CSV or PDF automatically?</h2>
-              <p>
+              <h2 className="title-2">
+                Prefer scanning your CSV or PDF automatically?
+              </h2>
+              <p className="body-6">
                 Subscription X-Ray parses CSV and PDF statements strictly inside
                 your browser without uploading raw files or PDF passwords; only
                 accounts, Cashfree credit purchases, and saved scan summaries use
-                server storage. {PACK_PRICE_LABEL} one-time grants {PACK_SIZE}{" "}
-                non-expiring scans, and valid zero-subscription statements
-                deduct zero credits.
+                server storage. {PACK_PRICE_LABEL} once grants {PACK_SIZE} non
+                expiring scans, and valid zero subscription statements deduct
+                zero credits.
               </p>
             </div>
             <div className="guide-cta-actions">
-              <Link className="btn btn-primary" href="/scanner">
-                <span>Open scanner — {PACK_PRICE_LABEL}</span>
-                <ArrowRight size={15} aria-hidden="true" />
+              <Link className="btn btn-primary button-md" href="/scanner">
+                <span>Scan my statement for {PACK_PRICE_LABEL}</span>
+                <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link className="btn btn-ghost" href="/about">
+              <Link className="btn btn-ghost button-md" href="/about">
                 How it works &amp; limits
               </Link>
             </div>

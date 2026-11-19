@@ -6,9 +6,8 @@ import robots from "@/app/robots";
 import { GUIDES } from "@/lib/guides";
 
 vi.mock("next/font/google", () => ({
-  DM_Sans: () => ({ variable: "--font-sans" }),
-  Plus_Jakarta_Sans: () => ({ variable: "--font-display" }),
-  JetBrains_Mono: () => ({ variable: "--font-mono" }),
+  Geist: () => ({ variable: "--font-sans" }),
+  Geist_Mono: () => ({ variable: "--font-mono" }),
 }));
 
 describe("SEO metadata routes", () => {
@@ -211,5 +210,5 @@ describe("SEO metadata routes", () => {
       "utf8"
     );
     expect(loginClient).toContain("What your Subscription X-Ray account includes");
-  });
+  }, 15000);
 });

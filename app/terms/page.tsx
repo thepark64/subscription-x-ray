@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react/ssr";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import { SUPPORT_EMAIL } from "@/lib/config";
 
 const TERMS_TITLE = "Terms of Service — Subscription X-Ray";
@@ -38,15 +40,17 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="legal-page">
-      <div className="wrap">
-        <div className="glass-panel legal-sheet">
-          <Link href="/" className="back">
-            <ArrowLeft size={16} aria-hidden="true" />
-            <span>Subscription X-Ray</span>
-          </Link>
-          <h1>Terms of Service</h1>
-          <p className="legal-updated">Last updated: 18 November 2026</p>
+    <>
+      <SiteHeader mode="content" />
+      <main id="main-content" className="legal-page">
+        <div className="wrap">
+          <div className="surface-card legal-sheet">
+            <Link href="/" className="back">
+              <ArrowLeft size={16} aria-hidden="true" />
+              <span>Subscription X-Ray</span>
+            </Link>
+            <h1>Terms of Service</h1>
+            <p className="legal-updated">Last updated: 18 November 2026</p>
 
           <section>
             <h2>1. What this service is</h2>
@@ -124,18 +128,20 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <nav className="legal-related-links" aria-label="Related pages">
-            <Link href="/">Home</Link>
-            <Link href="/scanner">Statement scanner</Link>
-            <Link href="/guides">Guides</Link>
-            <Link href="/about">About</Link>
-            <Link href="/contact">Contact</Link>
-            <Link href="/login">Sign in</Link>
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/refund">Refund Policy</Link>
-          </nav>
+            <nav className="legal-related-links" aria-label="Related pages">
+              <Link href="/">Home</Link>
+              <Link href="/scanner">Statement scanner</Link>
+              <Link href="/guides">Guides</Link>
+              <Link href="/about">About</Link>
+              <Link href="/contact">Contact</Link>
+              <Link href="/login">Sign in</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/refund">Refund Policy</Link>
+            </nav>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

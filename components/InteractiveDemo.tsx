@@ -4,12 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
+  CaretDown,
+  CaretUp,
   Play,
-  Sparkles,
-} from "lucide-react";
+  Question,
+} from "@phosphor-icons/react";
 import {
   analyzeCsv,
   formatConfidenceLabel,
@@ -32,15 +31,16 @@ export default function InteractiveDemo() {
   const annual = scanResult.monthlyTotal * 12;
 
   return (
-    <div className="glass-panel demo-shell">
+    <div className="surface-card demo-shell">
       <div className="demo-top">
         <div>
-          <span className="demo-pill">
-            <Sparkles size={12} aria-hidden="true" />
-            <span>Interactive sample · Synthetic data only · No credit used</span>
-          </span>
-          <h3>Try the detection engine on sample Indian statements</h3>
-          <p className="demo-sub">{preset.subtitle}</p>
+          <p className="caption-3 demo-kicker">
+            Interactive sample · Synthetic data only · No credit used
+          </p>
+          <h3 className="title-1">
+            Try the detection engine on sample Indian statements
+          </h3>
+          <p className="demo-sub body-6">{preset.subtitle}</p>
         </div>
 
         <div
@@ -62,7 +62,7 @@ export default function InteractiveDemo() {
                   setExpandedRow(null);
                 }}
               >
-                <Play size={12} aria-hidden="true" />
+                <Play size={12} weight="fill" aria-hidden="true" />
                 <span>{item.label}</span>
               </button>
             );
@@ -160,7 +160,7 @@ export default function InteractiveDemo() {
                     aria-expanded={open}
                     onClick={() => setExpandedRow(open ? null : rowKey)}
                   >
-                    <HelpCircle size={13} aria-hidden="true" />
+                    <Question size={14} aria-hidden="true" />
                     <span>
                       {sub.paymentRail === "upi_autopay" ||
                       sub.paymentRail === "upi"
@@ -168,9 +168,9 @@ export default function InteractiveDemo() {
                         : "Cancellation steps"}
                     </span>
                     {open ? (
-                      <ChevronUp size={13} aria-hidden="true" />
+                      <CaretUp size={14} aria-hidden="true" />
                     ) : (
-                      <ChevronDown size={13} aria-hidden="true" />
+                      <CaretDown size={14} aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -211,12 +211,12 @@ export default function InteractiveDemo() {
       </div>
 
       <div className="demo-footer">
-        <p>
-          Ready to scan your own bank or card CSV/PDF? ₹69 unlocks 12 real
-          browser-only scans — zero-subscription scans never cost a credit.
+        <p className="body-6">
+          Ready to scan your own bank or card statement? ₹69 unlocks 12 browser
+          only scans and zero subscription scans never cost a credit.
         </p>
-        <Link className="btn btn-primary btn-sm" href="/scanner">
-          Scan my real statements — ₹69
+        <Link className="btn btn-primary button-sm" href="/scanner">
+          Scan my statement for ₹69
         </Link>
       </div>
     </div>

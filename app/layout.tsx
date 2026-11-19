@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { CANONICAL_SITE_URL } from "@/lib/config";
 
-const dmSans = DM_Sans({
+const geist = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -60,15 +54,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${dmSans.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
       <body>
-        <div className="ambient-canvas" aria-hidden="true">
-          <div className="ambient-glow ambient-glow-primary" />
-          <div className="ambient-glow ambient-glow-secondary" />
-        </div>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <div className="app-shell">{children}</div>
         <Analytics />
       </body>

@@ -4,20 +4,20 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "motion/react";
 import {
-  AlertCircle,
   ArrowUpRight,
+  CaretDown,
+  CaretUp,
   Check,
-  ChevronDown,
-  ChevronUp,
-  Download,
+  CircleNotch,
+  DownloadSimple,
   FileText,
-  HelpCircle,
-  Loader2,
-  Lock,
-  Search,
-  Upload,
+  LockSimple,
+  MagnifyingGlass,
+  Question,
+  UploadSimple,
+  WarningCircle,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import {
   analyzeCsv,
   formatConfidenceLabel,
@@ -812,9 +812,9 @@ export default function Scanner({
             aria-disabled={busy}
           >
             {busy ? (
-              <Loader2 size={16} className="spin-icon" aria-hidden="true" />
+              <CircleNotch size={16} className="spin-icon" aria-hidden="true" />
             ) : (
-              <Upload size={16} aria-hidden="true" />
+              <UploadSimple size={16} aria-hidden="true" />
             )}
             <span>{busy ? "Scanning…" : "Choose CSV / PDF"}</span>
             <input
@@ -880,7 +880,7 @@ export default function Scanner({
             <div className="glass-panel scan-stage-locked">
               <div className="scan-locked-copy">
                 <div className="scan-locked-title">
-                  <Lock size={16} aria-hidden="true" />
+                  <LockSimple size={16} aria-hidden="true" />
                   <h2>You&apos;re out of scans</h2>
                 </div>
                 <p>
@@ -927,7 +927,7 @@ export default function Scanner({
                   transition={{
                     duration: busy ? 1.5 : 1.9,
                     repeat: Infinity,
-                    ease: "easeInOut",
+                    ease: [0.22, 1, 0.36, 1],
                   }}
                 />
               )}
@@ -944,14 +944,18 @@ export default function Scanner({
                 }
                 transition={
                   busy || !dragging
-                    ? { duration: busy ? 1.1 : 2.8, repeat: Infinity, ease: "easeInOut" }
-                    : { duration: 0.16, ease: [0.16, 1, 0.3, 1] }
+                    ? {
+                        duration: busy ? 1.1 : 2.8,
+                        repeat: Infinity,
+                        ease: [0.22, 1, 0.36, 1],
+                      }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
                 }
               >
                 {busy ? (
-                  <Loader2 size={22} className="spin-icon" />
+                  <CircleNotch size={22} className="spin-icon" />
                 ) : (
-                  <Upload size={22} />
+                  <UploadSimple size={22} />
                 )}
               </m.div>
 
@@ -962,7 +966,7 @@ export default function Scanner({
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <h2>
                     {busy
@@ -1027,7 +1031,7 @@ export default function Scanner({
                 />
                 <label className="btn btn-primary" aria-disabled={busy}>
                   {busy && (
-                    <Loader2 size={16} className="spin-icon" aria-hidden="true" />
+                    <CircleNotch size={16} className="spin-icon" aria-hidden="true" />
                   )}
                   <span>
                     {busy ? "Processing statement…" : "Select CSV or PDF"}
@@ -1052,7 +1056,7 @@ export default function Scanner({
               onSubmit={handlePdfPasswordSubmit}
             >
               <div className="pdf-password-head">
-                <Lock size={16} aria-hidden="true" />
+                <LockSimple size={16} aria-hidden="true" />
                 <div>
                   <strong>Password-protected PDF</strong>
                   <span>
@@ -1100,7 +1104,7 @@ export default function Scanner({
           {busy && phaseInfo && (
             <div className="results" role="status" aria-live="polite">
               <div className="glass-panel scan-progress-banner">
-                <Loader2
+                <CircleNotch
                   size={20}
                   className="spin-icon"
                   style={{ color: "var(--teal)", flexShrink: 0 }}
@@ -1134,7 +1138,7 @@ export default function Scanner({
 
           {error && (
             <div className="error-box" role="alert">
-              <AlertCircle
+              <WarningCircle
                 size={16}
                 style={{ flexShrink: 0, marginTop: 2 }}
                 aria-hidden="true"
@@ -1148,9 +1152,9 @@ export default function Scanner({
         <m.div
           ref={resultsRef}
           className="results"
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="glass-panel result-grid">
             <div className="metric">
@@ -1213,7 +1217,7 @@ export default function Scanner({
                   disabled={filteredSubscriptions.length === 0 || exportingPdf}
                 >
                   {exportingPdf ? (
-                    <Loader2 size={15} className="spin-icon" aria-hidden="true" />
+                    <CircleNotch size={15} className="spin-icon" aria-hidden="true" />
                   ) : (
                     <FileText size={15} aria-hidden="true" />
                   )}
@@ -1225,7 +1229,7 @@ export default function Scanner({
                   onClick={handleDownloadCsv}
                   disabled={filteredSubscriptions.length === 0}
                 >
-                  <Download size={15} aria-hidden="true" />
+                  <DownloadSimple size={15} aria-hidden="true" />
                   <span>Download CSV</span>
                 </button>
               </div>
@@ -1236,7 +1240,7 @@ export default function Scanner({
             <>
               <div className="results-toolbar">
                 <div className="results-search">
-                  <Search
+                  <MagnifyingGlass
                     size={16}
                     className="results-search-icon"
                     aria-hidden="true"
@@ -1377,7 +1381,7 @@ export default function Scanner({
                                 setExpandedGuideKey(guideOpen ? null : rowKey)
                               }
                             >
-                              <HelpCircle size={13} aria-hidden="true" />
+                              <Question size={14} aria-hidden="true" />
                               <span>
                                 {sub.paymentRail === "upi_autopay" ||
                                 sub.paymentRail === "upi"
@@ -1385,9 +1389,9 @@ export default function Scanner({
                                   : "How to cancel"}
                               </span>
                               {guideOpen ? (
-                                <ChevronUp size={13} aria-hidden="true" />
+                                <CaretUp size={14} aria-hidden="true" />
                               ) : (
-                                <ChevronDown size={13} aria-hidden="true" />
+                                <CaretDown size={14} aria-hidden="true" />
                               )}
                             </button>
                           </div>
@@ -1492,7 +1496,7 @@ export default function Scanner({
 
           <div className="glass-panel rail-privacy-note">
             <div className="rail-privacy-head">
-              <Lock size={14} aria-hidden="true" />
+              <LockSimple size={14} aria-hidden="true" />
               <strong>Browser-only statement parsing</strong>
             </div>
             <p>

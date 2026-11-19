@@ -3,18 +3,18 @@
 import { useState } from "react";
 import {
   ArrowUpRight,
+  CaretDown,
+  CaretUp,
   Check,
-  ChevronDown,
-  ChevronUp,
   Clock,
   FileText,
-  LayoutGrid,
-  LayoutList,
-  Pencil,
-  Trash2,
-  Upload,
+  ListBullets,
+  PencilSimple,
+  SquaresFour,
+  Trash,
+  UploadSimple,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import {
   formatConfidenceLabel,
   formatPaymentRailLabel,
@@ -123,7 +123,7 @@ export default function ScanHistory({
               aria-pressed={viewMode === "grid"}
               onClick={() => setViewMode("grid")}
             >
-              <LayoutGrid size={14} aria-hidden="true" />
+              <SquaresFour size={14} aria-hidden="true" />
               <span>Grid</span>
             </button>
             <button
@@ -132,7 +132,7 @@ export default function ScanHistory({
               aria-pressed={viewMode === "list"}
               onClick={() => setViewMode("list")}
             >
-              <LayoutList size={14} aria-hidden="true" />
+              <ListBullets size={14} aria-hidden="true" />
               <span>List</span>
             </button>
           </div>
@@ -186,7 +186,7 @@ export default function ScanHistory({
               className="btn btn-ghost btn-sm"
               onClick={onRequestScan}
             >
-              <Upload size={15} aria-hidden="true" />
+              <UploadSimple size={15} aria-hidden="true" />
               <span>Scan CSV / PDF</span>
             </button>
           )}
@@ -267,7 +267,7 @@ export default function ScanHistory({
                       onClick={() => onStartRename(s.id, displayName)}
                       disabled={isRowBusy}
                     >
-                      <Pencil size={14} aria-hidden="true" />
+                      <PencilSimple size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -283,9 +283,9 @@ export default function ScanHistory({
                       disabled={isRowBusy}
                     >
                       {isExpanded ? (
-                        <ChevronUp size={15} aria-hidden="true" />
+                        <CaretUp size={15} aria-hidden="true" />
                       ) : (
-                        <ChevronDown size={15} aria-hidden="true" />
+                        <CaretDown size={15} aria-hidden="true" />
                       )}
                     </button>
                     <button
@@ -296,7 +296,7 @@ export default function ScanHistory({
                       onClick={() => onDeleteScan(s.id)}
                       disabled={isRowBusy}
                     >
-                      <Trash2 size={14} aria-hidden="true" />
+                      <Trash size={14} aria-hidden="true" />
                     </button>
                   </div>
                 </div>

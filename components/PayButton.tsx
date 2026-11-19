@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { WarningCircle } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabaseClient";
 import { PACK_PRICE_LABEL, PACK_SIZE, SUPPORT_EMAIL } from "@/lib/config";
 
@@ -269,7 +269,7 @@ export default function PayButton({
       </button>
       {error && (
         <div className="error-box" role="alert">
-          <AlertCircle
+          <WarningCircle
             size={16}
             style={{ flexShrink: 0, marginTop: 2 }}
             aria-hidden="true"

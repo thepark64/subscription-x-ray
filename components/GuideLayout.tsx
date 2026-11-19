@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/ssr";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
@@ -80,17 +80,17 @@ export default function GuideLayout({
       />
       <SiteHeader mode="content" />
 
-      <main className="guide-page">
+      <main id="main-content" className="guide-page">
         <div className="wrap">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <ChevronRight size={14} aria-hidden="true" />
+            <CaretRight size={14} aria-hidden="true" />
             <Link href="/guides">Guides</Link>
-            <ChevronRight size={14} aria-hidden="true" />
+            <CaretRight size={14} aria-hidden="true" />
             <span aria-current="page">{guide.shortTitle}</span>
           </nav>
 
-          <article className="glass-panel guide-article">
+          <article className="surface-card guide-article">
             <header className="guide-header">
               <div className="guide-kicker">
                 <span>{guide.category}</span>
@@ -99,29 +99,31 @@ export default function GuideLayout({
                 <span aria-hidden="true">·</span>
                 <span>Updated 18 Nov 2026</span>
               </div>
-              <h1>{guide.title}</h1>
-              <p className="guide-summary">{guide.summary}</p>
+              <h1 className="heading-3">{guide.title}</h1>
+              <p className="guide-summary body-3">{guide.summary}</p>
             </header>
 
             <div className="guide-prose">{children}</div>
 
             <aside className="guide-cta-box" aria-label="Scanner tool">
               <div className="guide-cta-copy">
-                <h2>Check your own statement in browser memory</h2>
-                <p>
+                <h2 className="title-2">
+                  Check your own statement in browser memory
+                </h2>
+                <p className="body-6">
                   Upload an Indian bank or card CSV or digital PDF (including
-                  password-protected PDFs). Parsing stays strictly in your
-                  browser — nothing raw is uploaded. {PACK_PRICE_LABEL} one-time
-                  unlocks {PACK_SIZE} non-expiring scans, and zero-subscription
-                  scans never use a credit.
+                  password protected PDFs). Parsing stays strictly in your
+                  browser and raw files are never uploaded. {PACK_PRICE_LABEL}{" "}
+                  one time unlocks {PACK_SIZE} non expiring scans, and zero
+                  subscription scans never use a credit.
                 </p>
               </div>
               <div className="guide-cta-actions">
-                <Link className="btn btn-primary" href="/scanner">
-                  <span>Open scanner — {PACK_PRICE_LABEL}</span>
-                  <ArrowRight size={15} aria-hidden="true" />
+                <Link className="btn btn-primary button-md" href="/scanner">
+                  <span>Scan my statement for {PACK_PRICE_LABEL}</span>
+                  <ArrowRight size={16} aria-hidden="true" />
                 </Link>
-                <Link className="btn btn-ghost" href="/#demo">
+                <Link className="btn btn-ghost button-md" href="/#demo">
                   Try interactive sample
                 </Link>
               </div>
@@ -133,24 +135,26 @@ export default function GuideLayout({
             aria-labelledby="related-guides-heading"
           >
             <div className="related-guides-head">
-              <h2 id="related-guides-heading">Related statement guides</h2>
-              <Link href="/guides" className="text-link">
+              <h2 id="related-guides-heading" className="heading-6">
+                Related statement guides
+              </h2>
+              <Link href="/guides" className="text-link title-4">
                 Browse all guides
               </Link>
             </div>
             <div className="guides-grid">
               {related.map((item) => (
-                <article className="glass-panel guide-card" key={item.slug}>
-                  <div className="guide-card-meta">
+                <article className="surface-card guide-card" key={item.slug}>
+                  <div className="guide-card-meta caption-4">
                     <span>{item.category}</span>
                     <span aria-hidden="true">·</span>
                     <span>{item.readTime}</span>
                   </div>
-                  <h3>
+                  <h3 className="title-2">
                     <Link href={item.href}>{item.title}</Link>
                   </h3>
-                  <p>{item.summary}</p>
-                  <Link href={item.href} className="guide-card-link">
+                  <p className="body-6">{item.summary}</p>
+                  <Link href={item.href} className="guide-card-link title-4">
                     <span>Read guide</span>
                     <ArrowRight size={14} aria-hidden="true" />
                   </Link>

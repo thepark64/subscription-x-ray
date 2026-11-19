@@ -3,7 +3,13 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, Check, Pencil, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  PencilSimple,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import { isMissingColumnError, normalizeStatementName } from "@/lib/scanHistory";
 import AccountActions from "@/components/AccountActions";
@@ -155,9 +161,9 @@ export default function ScannerClient() {
 
   if (gate === "checking") {
     return (
-      <main className="gate-wrap">
-        <div className="glass-panel gate-card gate-card-wide">
-          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+      <main id="main-content" className="gate-wrap">
+        <div className="surface-card gate-card gate-card-wide">
+          <Link href="/" className="back">
             <ArrowLeft size={16} aria-hidden="true" />
             <BrandMark size={22} />
             <span>Subscription X-Ray</span>
@@ -177,7 +183,7 @@ export default function ScannerClient() {
             <h2 id="scanner-checking-overview">
               How browser-only scanning works
             </h2>
-            <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+            <p className="gate-info-lede body-6">
               Subscription X-Ray runs statement parsing and recurring charge
               analysis locally inside your browser so sensitive financial files
               and PDF passwords never leave your device.
@@ -221,9 +227,9 @@ export default function ScannerClient() {
 
   if (gate === "not-configured") {
     return (
-      <main className="gate-wrap">
-        <div className="glass-panel gate-card">
-          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+      <main id="main-content" className="gate-wrap">
+        <div className="surface-card gate-card">
+          <Link href="/" className="back">
             <ArrowLeft size={16} aria-hidden="true" />
             <BrandMark size={22} />
             <span>Subscription X-Ray</span>
@@ -246,8 +252,8 @@ export default function ScannerClient() {
 
   if (gate === "error") {
     return (
-      <main className="gate-wrap">
-        <div className="glass-panel gate-card">
+      <main id="main-content" className="gate-wrap">
+        <div className="surface-card gate-card">
           <h1>Couldn&apos;t load your account</h1>
           <p className="lede">
             Check your connection and ensure <code>supabase/schema.sql</code>{" "}
@@ -266,9 +272,9 @@ export default function ScannerClient() {
 
   if (gate === "needs-login") {
     return (
-      <main className="gate-wrap">
-        <div className="glass-panel gate-card gate-card-wide">
-          <Link href="/" className="back" style={{ marginBottom: 20 }}>
+      <main id="main-content" className="gate-wrap">
+        <div className="surface-card gate-card gate-card-wide">
+          <Link href="/" className="back">
             <ArrowLeft size={16} aria-hidden="true" />
             <BrandMark size={22} />
             <span>Subscription X-Ray</span>
@@ -288,7 +294,7 @@ export default function ScannerClient() {
             <h2 id="scanner-login-overview">
               How browser-only scanning works
             </h2>
-            <p className="lede" style={{ fontSize: 14, marginBottom: 14 }}>
+            <p className="gate-info-lede body-6">
               Sign in or create an account to manage your 12-scan credit pack,
               unlock browser-side CSV and PDF statement scanning, and save scan
               summaries across visits.
@@ -331,9 +337,9 @@ export default function ScannerClient() {
   const locked = credits <= 0;
 
   return (
-    <main className="scanner-page">
+    <main id="main-content" className="scanner-page">
       <div className="wrap wrap-dashboard">
-        <header className="glass-panel scanner-top">
+        <header className="surface-card scanner-top">
           <div className="scanner-brand-group">
             <Link href="/" className="back">
               <ArrowLeft size={15} aria-hidden="true" />
@@ -390,7 +396,7 @@ export default function ScannerClient() {
                   setEditingName(true);
                 }}
               >
-                <Pencil size={13} aria-hidden="true" />
+                <PencilSimple size={14} aria-hidden="true" />
                 <span>{fullName ? "Edit name" : "Add name"}</span>
               </button>
             )}
@@ -398,13 +404,13 @@ export default function ScannerClient() {
           </div>
         </header>
         {paymentNotice && (
-          <div className="notice-box" style={{ marginBottom: 20 }} role="status">
+          <div className="notice-box" style={{ marginBottom: 24 }} role="status">
             {paymentNotice}
           </div>
         )}
         {paymentError && (
-          <div className="error-box" style={{ marginBottom: 20 }} role="alert">
-            <AlertCircle
+          <div className="error-box" style={{ marginBottom: 24 }} role="alert">
+            <WarningCircle
               size={16}
               style={{ flexShrink: 0, marginTop: 2 }}
               aria-hidden="true"

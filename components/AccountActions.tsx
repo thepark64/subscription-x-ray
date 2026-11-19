@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Trash2 } from "lucide-react";
+import { SignOut, Trash } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabaseClient";
 import { SUPPORT_EMAIL } from "@/lib/config";
 
@@ -64,7 +64,7 @@ export default function AccountActions() {
         onClick={signOut}
         disabled={busy}
       >
-        <LogOut size={14} aria-hidden="true" />
+        <SignOut size={14} aria-hidden="true" />
         <span>Sign out</span>
       </button>
       <button
@@ -73,7 +73,7 @@ export default function AccountActions() {
         onClick={deleteAccount}
         disabled={busy}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash size={14} aria-hidden="true" />
         <span>Delete account</span>
       </button>
     </div>

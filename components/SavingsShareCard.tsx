@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import {
+  ArrowsClockwise,
   Check,
   Copy,
-  Download,
-  Lock,
-  RotateCcw,
-  Share2,
-} from "lucide-react";
+  DownloadSimple,
+  LockSimple,
+  ShareNetwork,
+} from "@phosphor-icons/react";
 import type { Subscription } from "@/lib/detection";
 import {
   buildPrivacySafeCardData,
@@ -250,10 +250,10 @@ export default function SavingsShareCard({
 
       <div className="savings-share-footer">
         <div className="savings-privacy-pill">
-          <Lock size={13} aria-hidden="true" />
+          <LockSimple size={14} aria-hidden="true" />
           <span>
-            Share text &amp; PNG card include only totals — never merchant
-            names, banks, filenames, or UPI IDs.
+            Share text and PNG card include only totals, never merchant names,
+            banks, filenames, or UPI IDs.
           </span>
         </div>
 
@@ -264,7 +264,7 @@ export default function SavingsShareCard({
               className="btn btn-ghost btn-sm"
               onClick={onClearSelection}
             >
-              <RotateCcw size={14} aria-hidden="true" />
+              <ArrowsClockwise size={14} aria-hidden="true" />
               <span>Clear selection</span>
             </button>
           )}
@@ -285,7 +285,7 @@ export default function SavingsShareCard({
             className="btn btn-ghost btn-sm"
             onClick={handleShareSummary}
           >
-            <Share2 size={14} aria-hidden="true" />
+            <ShareNetwork size={14} aria-hidden="true" />
             <span>Share</span>
           </button>
           <button
@@ -294,7 +294,7 @@ export default function SavingsShareCard({
             onClick={handleDownloadSummaryCard}
             disabled={downloadingCard}
           >
-            <Download size={14} aria-hidden="true" />
+            <DownloadSimple size={14} aria-hidden="true" />
             <span>{downloadingCard ? "Rendering…" : "Download card PNG"}</span>
           </button>
         </div>

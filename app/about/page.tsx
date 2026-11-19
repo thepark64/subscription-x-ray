@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/ssr";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
@@ -66,15 +66,15 @@ export default function AboutPage() {
       />
       <SiteHeader mode="content" />
 
-      <main className="guide-page">
+      <main id="main-content" className="guide-page">
         <div className="wrap">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <ChevronRight size={14} aria-hidden="true" />
+            <CaretRight size={14} aria-hidden="true" />
             <span aria-current="page">About</span>
           </nav>
 
-          <article className="glass-panel guide-article">
+          <article className="surface-card guide-article">
             <header className="guide-header">
               <div className="guide-kicker">
                 <span>Product overview</span>
@@ -234,11 +234,11 @@ export default function AboutPage() {
                 </p>
               </div>
               <div className="guide-cta-actions">
-                <Link className="btn btn-primary" href="/scanner">
-                  <span>Open scanner — {PACK_PRICE_LABEL}</span>
-                  <ArrowRight size={15} aria-hidden="true" />
+                <Link className="btn btn-primary button-md" href="/scanner">
+                  <span>Scan my statement for {PACK_PRICE_LABEL}</span>
+                  <ArrowRight size={16} aria-hidden="true" />
                 </Link>
-                <Link className="btn btn-ghost" href="/guides">
+                <Link className="btn btn-ghost button-md" href="/guides">
                   Read guides
                 </Link>
               </div>

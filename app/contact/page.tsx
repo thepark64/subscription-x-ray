@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Mail } from "lucide-react";
+import { CaretRight, EnvelopeSimple } from "@phosphor-icons/react/ssr";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import {
@@ -71,15 +71,15 @@ export default function ContactPage() {
       />
       <SiteHeader mode="content" />
 
-      <main className="guide-page">
+      <main id="main-content" className="guide-page">
         <div className="wrap">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <ChevronRight size={14} aria-hidden="true" />
+            <CaretRight size={14} aria-hidden="true" />
             <span aria-current="page">Contact</span>
           </nav>
 
-          <article className="glass-panel guide-article">
+          <article className="surface-card guide-article">
             <header className="guide-header">
               <div className="guide-kicker">
                 <span>Support</span>
@@ -106,7 +106,7 @@ export default function ContactPage() {
                     href={`mailto:${SUPPORT_EMAIL}?subject=Subscription%20X-Ray%20Support`}
                     className="contact-email-link"
                   >
-                    <Mail size={16} aria-hidden="true" />
+                    <EnvelopeSimple size={16} aria-hidden="true" />
                     <span>{SUPPORT_EMAIL}</span>
                   </a>
                 </section>
