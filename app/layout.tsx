@@ -63,18 +63,9 @@ export default function RootLayout({
         <div className="app-shell">{children}</div>
         <Analytics />
         <Script
-          src="https://www.googletagmanager.com/gtm.js?id=GTM-KZPZNV5D"
-          strategy="afterInteractive"
-        />
-        <Script
           src="https://www.googletagmanager.com/gtm.js?id=GTM-K3DK3S7M"
           strategy="afterInteractive"
         />
-        <Script id="google-analytics-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());`}
-        </Script>
       </body>
     </html>
   );
