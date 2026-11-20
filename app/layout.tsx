@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -61,6 +62,15 @@ export default function RootLayout({
         </a>
         <div className="app-shell">{children}</div>
         <Analytics />
+        <Script
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-KZPZNV5D"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());`}
+        </Script>
       </body>
     </html>
   );

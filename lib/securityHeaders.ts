@@ -37,6 +37,7 @@ export function buildContentSecurityPolicy(
     "'unsafe-inline'",
     "https://sdk.cashfree.com",
     "https://va.vercel-scripts.com",
+    "https://www.googletagmanager.com",
   ];
   if (!isProduction) {
     // Next.js development mode relies on eval for Fast Refresh and source maps.
@@ -53,6 +54,10 @@ export function buildContentSecurityPolicy(
     "https://payments.cashfree.com",
     "https://payments-test.cashfree.com",
     "https://vitals.vercel-insights.com",
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+    "https://*.google-analytics.com",
+    "https://*.analytics.google.com",
   ];
   if (supabaseOrigin && !connectSrc.includes(supabaseOrigin)) {
     connectSrc.push(supabaseOrigin);
@@ -65,7 +70,7 @@ export function buildContentSecurityPolicy(
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://sdk.cashfree.com https://*.cashfree.com",
+    "img-src 'self' data: blob: https://sdk.cashfree.com https://*.cashfree.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com",
     "font-src 'self' data:",
     `connect-src ${connectSrc.join(" ")}`,
     "frame-src 'self' https://sdk.cashfree.com https://*.cashfree.com",

@@ -14,13 +14,16 @@ describe("security headers", () => {
     });
 
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("script-src 'self' 'unsafe-inline' https://sdk.cashfree.com https://va.vercel-scripts.com");
+    expect(csp).toContain("script-src 'self' 'unsafe-inline' https://sdk.cashfree.com https://va.vercel-scripts.com https://www.googletagmanager.com");
     expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).toContain("connect-src 'self' https://*.supabase.co wss://*.supabase.co");
     expect(csp).toContain("https://demo-proj.supabase.co");
     expect(csp).toContain("wss://demo-proj.supabase.co");
     expect(csp).toContain("https://sdk.cashfree.com");
     expect(csp).toContain("https://api.cashfree.com");
+    expect(csp).toContain("https://www.googletagmanager.com");
+    expect(csp).toContain("https://www.google-analytics.com");
+    expect(csp).toContain("https://*.analytics.google.com");
     expect(csp).toContain("frame-src 'self' https://sdk.cashfree.com https://*.cashfree.com");
     expect(csp).toContain("worker-src 'self' blob:");
     expect(csp).toContain("form-action 'self' https://sdk.cashfree.com https://*.cashfree.com");
