@@ -11,9 +11,9 @@ export default function SiteFooter() {
             <span>Subscription X-Ray</span>
           </Link>
           <p className="footer-tagline body-6">
-            Local browser Indian bank and card CSV or PDF statement scanner for
-            recurring charges, UPI AutoPay mandates, and NACH debits. Single
-            ₹69 payment unlocks 12 never expiring scans.
+            See what&apos;s quietly leaving your account every month. Browser
+            local CSV and PDF statement scanner for UPI AutoPay, NACH, and
+            recurring card charges. ₹69 once grants 12 never expiring scans.
           </p>
         </div>
 
@@ -26,13 +26,23 @@ export default function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/how-it-works" className="body-6">
+                How it works
+              </Link>
+            </li>
+            <li>
               <Link href="/#demo" className="body-6">
                 Interactive sample
               </Link>
             </li>
             <li>
-              <Link href="/#pricing" className="body-6">
-                ₹69 scan pack
+              <Link href="/compare" className="body-6">
+                Compare approaches
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq" className="body-6">
+                Frequently asked questions
               </Link>
             </li>
             <li>
@@ -48,7 +58,7 @@ export default function SiteFooter() {
           <ul>
             <li>
               <Link href="/guides" className="body-6">
-                All statement guides
+                All 10 statement guides
               </Link>
             </li>
             <li>
@@ -67,18 +77,24 @@ export default function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/guides/identify-nach-emandate" className="body-6">
-                Identify NACH mandates
+              <Link
+                href="/guides/hdfc-sbi-icici-automatic-payments"
+                className="body-6"
+              >
+                HDFC, SBI &amp; ICICI statements
               </Link>
             </li>
             <li>
-              <Link href="/guides/recurring-card-payments" className="body-6">
-                Recurring card payments
+              <Link
+                href="/guides/calculate-monthly-subscription-spending"
+                className="body-6"
+              >
+                Calculate monthly spend
               </Link>
             </li>
             <li>
-              <Link href="/guides/read-bank-statements" className="body-6">
-                Read bank statements
+              <Link href="/guides/debit-card-recurring-payments" className="body-6">
+                Debit card recurring charges
               </Link>
             </li>
           </ul>

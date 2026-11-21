@@ -45,19 +45,33 @@ export const metadata: Metadata = {
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
+  "@graph": [
     {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: CANONICAL_SITE_URL,
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: CANONICAL_SITE_URL,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Contact",
+          item: `${CANONICAL_SITE_URL}/contact`,
+        },
+      ],
     },
     {
-      "@type": "ListItem",
-      position: 2,
-      name: "Contact",
-      item: `${CANONICAL_SITE_URL}/contact`,
+      "@type": "ContactPage",
+      name: CONTACT_TITLE,
+      description: CONTACT_DESCRIPTION,
+      url: `${CANONICAL_SITE_URL}/contact`,
+      inLanguage: "en-IN",
+      mainEntity: {
+        "@id": `${CANONICAL_SITE_URL}/#organization`,
+      },
     },
   ],
 };

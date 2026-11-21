@@ -3526,6 +3526,10 @@ h2 {
   line-height: 20px;
 }
 
+.faq-link-row {
+  margin-top: 8px;
+}
+
 .guide-cta-box {
   margin-top: 32px;
   padding: 24px;

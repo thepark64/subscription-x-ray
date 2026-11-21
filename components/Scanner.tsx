@@ -28,6 +28,7 @@ import {
   type ScanResult,
 } from "@/lib/detection";
 import { analyzePdfFile, PdfPasswordError } from "@/lib/pdfStatement";
+import { trackScanCompleted } from "@/lib/analytics";
 import {
   buildCsvExportFilename,
   subscriptionsToCsv,
@@ -720,6 +721,12 @@ export default function Scanner({
         setResult(null);
         return;
       }
+
+      trackScanCompleted({
+        fileType: isPdf ? "pdf" : "csv",
+        recurringCount: data.subscriptions.length,
+        creditUsed: data.subscriptions.length > 0,
+      });
 
       setResult(data);
       setSearchQuery("");

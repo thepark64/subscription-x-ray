@@ -40,19 +40,33 @@ export const metadata: Metadata = {
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
+  "@graph": [
     {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: CANONICAL_SITE_URL,
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: CANONICAL_SITE_URL,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "About",
+          item: `${CANONICAL_SITE_URL}/about`,
+        },
+      ],
     },
     {
-      "@type": "ListItem",
-      position: 2,
-      name: "About",
-      item: `${CANONICAL_SITE_URL}/about`,
+      "@type": "AboutPage",
+      name: ABOUT_TITLE,
+      description: ABOUT_DESCRIPTION,
+      url: `${CANONICAL_SITE_URL}/about`,
+      inLanguage: "en-IN",
+      about: {
+        "@id": `${CANONICAL_SITE_URL}/#organization`,
+      },
     },
   ],
 };
@@ -220,8 +234,11 @@ export default function AboutPage() {
                 <Link href="/guides/identify-nach-emandate">
                   NACH e-Mandates
                 </Link>
-                , and cancelling unwanted debits safely. Questions or payment
-                issues? Visit our <Link href="/contact">Contact page</Link>.
+                , and cancelling unwanted debits safely. You can also inspect
+                our <Link href="/how-it-works">technical architecture</Link>,{" "}
+                <Link href="/compare">compare tracker approaches</Link>, read our{" "}
+                <Link href="/faq">FAQ</Link>, or visit the{" "}
+                <Link href="/contact">Contact page</Link>.
               </p>
             </div>
 

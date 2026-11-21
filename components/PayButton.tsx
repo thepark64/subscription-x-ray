@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { WarningCircle } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabaseClient";
+import { trackBeginCheckout, trackPurchaseSuccess } from "@/lib/analytics";
 import { PACK_PRICE_LABEL, PACK_SIZE, SUPPORT_EMAIL } from "@/lib/config";
 
 type CashfreeCheckoutResult = {
@@ -87,6 +88,7 @@ export default function PayButton({
           body: JSON.stringify({ orderId }),
         });
         if (verifyRes.status === 200) {
+          trackPurchaseSuccess(orderId);
           await onCreditsChanged();
           setWaiting(false);
           setBusy(false);
@@ -95,6 +97,7 @@ export default function PayButton({
         if (verifyRes.status === 202) {
           const latest = await onCreditsChanged();
           if (latest > currentCredits) {
+            trackPurchaseSuccess(orderId);
             setWaiting(false);
             setBusy(false);
             return;
@@ -103,6 +106,7 @@ export default function PayButton({
         }
         const latest = await onCreditsChanged();
         if (latest > currentCredits) {
+          trackPurchaseSuccess(orderId);
           setWaiting(false);
           setBusy(false);
           return;
@@ -131,6 +135,7 @@ export default function PayButton({
       });
 
       if (verifyRes.status === 200) {
+        trackPurchaseSuccess(orderId);
         await onCreditsChanged();
         setWaiting(false);
         setBusy(false);
@@ -214,6 +219,8 @@ export default function PayButton({
       const cashfree = window.Cashfree({
         mode: order.mode === "production" ? "production" : "sandbox",
       });
+
+      trackBeginCheckout();
 
       const result = await cashfree.checkout({
         paymentSessionId: order.paymentSessionId,

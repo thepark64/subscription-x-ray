@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { trackCtaClick } from "@/lib/analytics";
 import BrandMark from "@/components/BrandMark";
 
 export default function SiteHeader({
@@ -42,37 +43,37 @@ export default function SiteHeader({
   const desktopLinks =
     mode === "home"
       ? [
-          { href: "#how", label: "How it works", isAnchor: true },
+          { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "#demo", label: "Sample scan", isAnchor: true },
           { href: "#pricing", label: "Pricing", isAnchor: true },
           { href: "/guides", label: "Guides", isAnchor: false },
-          { href: "/about", label: "About", isAnchor: false },
+          { href: "/faq", label: "FAQ", isAnchor: false },
         ]
       : [
           { href: "/", label: "Home", isAnchor: false },
+          { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "/guides", label: "Guides", isAnchor: false },
-          { href: "/about", label: "About", isAnchor: false },
-          { href: "/contact", label: "Contact", isAnchor: false },
-          { href: "/#pricing", label: "Pricing", isAnchor: false },
+          { href: "/compare", label: "Compare", isAnchor: false },
+          { href: "/faq", label: "FAQ", isAnchor: false },
         ];
 
   const mobileLinks =
     mode === "home"
       ? [
-          { href: "#how", label: "How it works", isAnchor: true },
+          { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "#demo", label: "Sample scan", isAnchor: true },
           { href: "#pricing", label: "Pricing", isAnchor: true },
           { href: "/guides", label: "Statement guides", isAnchor: false },
-          { href: "/about", label: "About", isAnchor: false },
-          { href: "/contact", label: "Contact", isAnchor: false },
+          { href: "/compare", label: "Compare approaches", isAnchor: false },
+          { href: "/faq", label: "FAQ", isAnchor: false },
         ]
       : [
           { href: "/", label: "Home", isAnchor: false },
+          { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "/guides", label: "Statement guides", isAnchor: false },
+          { href: "/compare", label: "Compare approaches", isAnchor: false },
+          { href: "/faq", label: "FAQ", isAnchor: false },
           { href: "/about", label: "About", isAnchor: false },
-          { href: "/contact", label: "Contact", isAnchor: false },
-          { href: "/#pricing", label: "Pricing", isAnchor: false },
-          { href: "/scanner", label: "Open scanner", isAnchor: false },
         ];
 
   return (
@@ -112,7 +113,10 @@ export default function SiteHeader({
             <Link
               className="btn btn-primary button-sm nav-cta"
               href="/scanner"
-              onClick={closeMenu}
+              onClick={() => {
+                trackCtaClick("header_nav", "Open scanner", "/scanner");
+                closeMenu();
+              }}
             >
               Open scanner
             </Link>
@@ -187,7 +191,14 @@ export default function SiteHeader({
               className="btn btn-primary button-md full"
               href="/scanner"
               tabIndex={menuOpen ? 0 : -1}
-              onClick={closeMenu}
+              onClick={() => {
+                trackCtaClick(
+                  "mobile_drawer",
+                  "Scan my statement for ₹69",
+                  "/scanner"
+                );
+                closeMenu();
+              }}
             >
               Scan my statement for ₹69
             </Link>

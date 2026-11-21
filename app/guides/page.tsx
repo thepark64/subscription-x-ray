@@ -94,7 +94,10 @@ export default function GuidesIndexPage() {
             <p className="lede body-3">
               Clear explanations of how UPI AutoPay, NACH eMandates, and card
               Standing Instructions appear on Indian bank statements and how to
-              verify or revoke them directly with your bank or UPI app.
+              verify or revoke them directly with your bank or UPI app. Also see
+              our <Link href="/how-it-works" className="text-link">architecture</Link>,{" "}
+              <Link href="/compare" className="text-link">comparison</Link>, and{" "}
+              <Link href="/faq" className="text-link">FAQ</Link>.
             </p>
           </div>
 
@@ -139,7 +142,7 @@ export default function GuidesIndexPage() {
                 <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link className="btn btn-ghost button-md" href="/about">
+              <Link className="btn btn-ghost button-md" href="/how-it-works">
                 How it works &amp; limits
               </Link>
             </div>

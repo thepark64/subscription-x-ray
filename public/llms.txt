@@ -1,0 +1,50 @@
+# Subscription X-Ray
+
+> See what's quietly leaving your account every month. Scan Indian bank and credit card statements privately inside your browser to discover recurring payments, UPI AutoPay mandates, NACH debits, and card Standing Instructions.
+
+- Canonical URL: https://subscription-x-ray.vercel.app
+- Category: Personal finance utility (India)
+- Pricing: ₹69 one-time payment via Cashfree for 12 non-expiring scan credits
+- Free Tier: No free tier for real statement scans; interactive synthetic sample runs free on the homepage without signing in
+
+## Core Capabilities (Verified Against Source Code)
+
+- **Browser-local file parsing**: Delimited CSV exports (comma, semicolon, tab, pipe; up to 10 MB and 100,000 rows) and digital or password-protected PDF statements (up to 10 MB, unlocked locally via PDF.js worker in browser memory). Raw statement files and PDF passwords are never uploaded to servers.
+- **Indian payment rail detection**: Labels `UPI AutoPay`, `NACH / eMandate`, `Card Standing Instruction`, and `UPI` recurring debits where supported by statement narration text.
+- **Billing cadence & confidence**: Detects weekly, monthly, quarterly, and annual billing cycles and assigns `High`, `Medium`, or `Possible` confidence levels alongside a short detection reason.
+- **Noise filtering**: Excludes reversals, refunds, failed payment attempts, credit inflows, and `₹1`–`₹5` mandate verification holds.
+- **Export & history**: Exports structured CSV summaries and printable PDF checklists; saves detected recurring summary metadata (`merchant`, `amount`, `frequency`, `occurrences`, `monthly_equivalent`, `confidence`, `payment_rail`, `detection_reason`) and 6-month trend calculations to the signed-in Supabase account.
+- **Credit guarantee**: Each qualifying scan deducts 1 credit. Valid statements with zero detected recurring charges save the empty summary and spend 0 credits.
+
+## Honest Limitations
+
+- Cannot read scanned image-only PDFs without selectable text (no cloud or browser OCR).
+- Never connects to bank logins, NetBanking portals, or RBI Account Aggregators.
+- Does not revoke mandates or cancel subscriptions automatically; provides direct merchant management links and step-by-step Google Pay, PhonePe, Paytm, BHIM, NACH, and RBI SI Hub cancellation guidance.
+- Heuristic interval matching across two or more cycles (four or more for weekly) cannot confirm monthly/annual plans from a single 30-day export and can flag regular manual transfers (such as monthly rent).
+
+## Key Public Pages
+
+- Homepage & Interactive Synthetic Demo: https://subscription-x-ray.vercel.app/
+- How It Works & Privacy Architecture: https://subscription-x-ray.vercel.app/how-it-works
+- Frequently Asked Questions (AEO Hub): https://subscription-x-ray.vercel.app/faq
+- Tracker & Approach Comparison: https://subscription-x-ray.vercel.app/compare
+- About Subscription X-Ray: https://subscription-x-ray.vercel.app/about
+- Contact & Support: https://subscription-x-ray.vercel.app/contact
+- Privacy Policy: https://subscription-x-ray.vercel.app/privacy
+- Terms of Service: https://subscription-x-ray.vercel.app/terms
+- Refund Policy: https://subscription-x-ray.vercel.app/refund
+
+## Indian Banking & Subscription Guides
+
+- Guides Hub: https://subscription-x-ray.vercel.app/guides
+- How to Find UPI AutoPay Mandates in India: https://subscription-x-ray.vercel.app/guides/find-upi-autopay-mandates
+- How to Cancel UPI AutoPay Mandates: https://subscription-x-ray.vercel.app/guides/cancel-upi-autopay
+- How to Find Hidden Subscriptions in Your Bank Statement: https://subscription-x-ray.vercel.app/guides/find-hidden-subscriptions
+- How to Identify NACH and eMandate Transactions: https://subscription-x-ray.vercel.app/guides/identify-nach-emandate
+- How to Identify Recurring Card Payments: https://subscription-x-ray.vercel.app/guides/recurring-card-payments
+- How to Read Bank Statement Narrations in India: https://subscription-x-ray.vercel.app/guides/read-bank-statements
+- How to Find Recurring Payments on Your Debit Card in India: https://subscription-x-ray.vercel.app/guides/debit-card-recurring-payments
+- Find AutoPay in HDFC, SBI & ICICI Bank Statements: https://subscription-x-ray.vercel.app/guides/hdfc-sbi-icici-automatic-payments
+- Calculate Monthly Subscription Expenses Accurately: https://subscription-x-ray.vercel.app/guides/calculate-monthly-subscription-spending
+- Protect Financial Data When Scanning Bank Statements: https://subscription-x-ray.vercel.app/guides/bank-statement-privacy-security

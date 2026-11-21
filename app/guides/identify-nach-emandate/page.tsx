@@ -142,7 +142,7 @@ export default function IdentifyNachEmandatePage() {
         <li>
           <strong>Look out for registration or verification entries:</strong>{" "}
           Narration text containing terms like <em>mandate registration</em>,{" "}
-          <em>setup</em>, or <em>revocation</em>, or a tiny ₹1–₹2 verification
+          <em>setup</em>, or <em>revocation</em>, or a tiny ₹1–₹5 verification
           charge, indicates mandate lifecycle administration rather than a
           recurring monthly fee.
         </li>

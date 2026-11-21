@@ -10,6 +10,7 @@ import {
   getEmailConfirmationRedirectUrl,
   getPasswordResetRedirectUrl,
 } from "@/lib/authRedirect";
+import { trackSignupCompleted } from "@/lib/analytics";
 import BrandMark from "@/components/BrandMark";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -118,6 +119,8 @@ export default function LoginClient() {
           setError(authError.message);
           return;
         }
+
+        trackSignupCompleted("email");
 
         if (!data.session) {
           setNotice(
@@ -345,7 +348,7 @@ export default function LoginClient() {
             verification.
           </li>
           <li>
-            <strong>100% browser-side parsing:</strong> Indian bank and credit
+            <strong>Browser-local statement parsing:</strong> Indian bank and credit
             card CSV or PDF statements (including password-protected bank PDFs)
             are decoded locally in browser memory. Raw transaction rows and PDF
             passwords are never uploaded.

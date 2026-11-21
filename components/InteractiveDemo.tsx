@@ -15,6 +15,7 @@ import {
   formatPaymentRailLabel,
 } from "@/lib/detection";
 import { DEMO_PRESETS } from "@/lib/demoStatement";
+import { trackDemoInteraction } from "@/lib/analytics";
 import { getCancellationGuidance } from "@/lib/services";
 import { getSubscriptionCategory } from "@/lib/subscriptionFilter";
 
@@ -60,6 +61,7 @@ export default function InteractiveDemo() {
                 onClick={() => {
                   setPresetId(item.id);
                   setExpandedRow(null);
+                  trackDemoInteraction("preset_select", item.id);
                 }}
               >
                 <Play size={12} weight="fill" aria-hidden="true" />
@@ -158,7 +160,16 @@ export default function InteractiveDemo() {
                     type="button"
                     className="guide-toggle-btn"
                     aria-expanded={open}
-                    onClick={() => setExpandedRow(open ? null : rowKey)}
+                    onClick={() => {
+                      const nextOpen = open ? null : rowKey;
+                      setExpandedRow(nextOpen);
+                      if (nextOpen) {
+                        trackDemoInteraction(
+                          "cancel_guide_open",
+                          sub.paymentRail ?? "upi"
+                        );
+                      }
+                    }}
                   >
                     <Question size={14} aria-hidden="true" />
                     <span>
@@ -215,7 +226,11 @@ export default function InteractiveDemo() {
           Ready to scan your own bank or card statement? ₹69 unlocks 12 browser
           only scans and zero subscription scans never cost a credit.
         </p>
-        <Link className="btn btn-primary button-sm" href="/scanner">
+        <Link
+          className="btn btn-primary button-sm"
+          href="/scanner"
+          onClick={() => trackDemoInteraction("demo_cta_click", preset.id)}
+        >
           Scan my statement for ₹69
         </Link>
       </div>

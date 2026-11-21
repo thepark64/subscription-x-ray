@@ -21,15 +21,15 @@ export const GUIDES: GuideMeta[] = [
     description:
       "Learn how UPI AutoPay works in India, how to spot AutoPay debits in bank statements, and how Subscription X-Ray flags recurring mandates.",
     summary:
-      "Understand NPCI UPI AutoPay limits, statement narration clues, and how to separate live recurring mandates from ₹1–₹2 verification pings.",
+      "Understand NPCI UPI AutoPay limits, statement narration clues, and how to separate live recurring mandates from ₹1–₹5 verification pings.",
     category: "UPI AutoPay",
     readTime: "6 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
       "cancel-upi-autopay",
+      "hdfc-sbi-icici-automatic-payments",
       "find-hidden-subscriptions",
-      "read-bank-statements",
     ],
   },
   {
@@ -44,7 +44,7 @@ export const GUIDES: GuideMeta[] = [
     category: "UPI AutoPay",
     readTime: "6 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
       "find-upi-autopay-mandates",
       "identify-nach-emandate",
@@ -63,10 +63,10 @@ export const GUIDES: GuideMeta[] = [
     category: "Statement Audit",
     readTime: "7 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
+      "calculate-monthly-subscription-spending",
       "find-upi-autopay-mandates",
-      "recurring-card-payments",
       "read-bank-statements",
     ],
   },
@@ -82,11 +82,11 @@ export const GUIDES: GuideMeta[] = [
     category: "Bank Mandates",
     readTime: "6 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
       "read-bank-statements",
       "cancel-upi-autopay",
-      "find-hidden-subscriptions",
+      "hdfc-sbi-icici-automatic-payments",
     ],
   },
   {
@@ -101,11 +101,11 @@ export const GUIDES: GuideMeta[] = [
     category: "Cards & SI Hub",
     readTime: "6 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
+      "debit-card-recurring-payments",
       "find-hidden-subscriptions",
       "identify-nach-emandate",
-      "read-bank-statements",
     ],
   },
   {
@@ -120,11 +120,87 @@ export const GUIDES: GuideMeta[] = [
     category: "Banking Basics",
     readTime: "7 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-18",
+    updatedAt: "2026-11-21",
     relatedSlugs: [
+      "hdfc-sbi-icici-automatic-payments",
       "find-upi-autopay-mandates",
       "identify-nach-emandate",
+    ],
+  },
+  {
+    slug: "debit-card-recurring-payments",
+    href: "/guides/debit-card-recurring-payments",
+    title: "Find Recurring Payments on Your Debit Card in India",
+    shortTitle: "Debit Card Subscriptions",
+    description:
+      "Spot recurring debit card Standing Instructions, RBI e-mandates, and app subscriptions across HDFC, SBI, ICICI, and Axis statements in India.",
+    summary:
+      "Separate debit card Standing Instructions from bank account UPI AutoPay or NACH debits and inspect issuer SI Hub portals safely.",
+    category: "Cards & SI Hub",
+    readTime: "6 min read",
+    publishedAt: "2026-11-21",
+    updatedAt: "2026-11-21",
+    relatedSlugs: [
+      "recurring-card-payments",
       "find-hidden-subscriptions",
+      "bank-statement-privacy-security",
+    ],
+  },
+  {
+    slug: "hdfc-sbi-icici-automatic-payments",
+    href: "/guides/hdfc-sbi-icici-automatic-payments",
+    title: "Find AutoPay in HDFC, SBI & ICICI Bank Statements",
+    shortTitle: "HDFC, SBI & ICICI AutoPay",
+    description:
+      "Learn how HDFC, SBI, and ICICI label UPI AutoPay, NACH debits, and recurring card charges in CSV and PDF statements, plus how to export data.",
+    summary:
+      "Compare CSV and selectable PDF export formats across major Indian banks and recognize how narration strings wrap AutoPay and NACH metadata.",
+    category: "Bank Statements",
+    readTime: "7 min read",
+    publishedAt: "2026-11-21",
+    updatedAt: "2026-11-21",
+    relatedSlugs: [
+      "read-bank-statements",
+      "find-upi-autopay-mandates",
+      "identify-nach-emandate",
+    ],
+  },
+  {
+    slug: "calculate-monthly-subscription-spending",
+    href: "/guides/calculate-monthly-subscription-spending",
+    title: "Calculate Monthly Subscription Expenses Accurately",
+    shortTitle: "Calculate Monthly Spend",
+    description:
+      "Convert weekly, monthly, quarterly, and annual subscriptions into an accurate monthly baseline and catch small recurring debits before renewal.",
+    summary:
+      "Normalize mixed billing cycles into a single monthly run-rate and see how overlooked ₹99 to ₹499 plans compound over twelve months.",
+    category: "Spending Audit",
+    readTime: "6 min read",
+    publishedAt: "2026-11-21",
+    updatedAt: "2026-11-21",
+    relatedSlugs: [
+      "find-hidden-subscriptions",
+      "cancel-upi-autopay",
+      "debit-card-recurring-payments",
+    ],
+  },
+  {
+    slug: "bank-statement-privacy-security",
+    href: "/guides/bank-statement-privacy-security",
+    title: "Protect Financial Data When Scanning Bank Statements",
+    shortTitle: "Statement Privacy Guide",
+    description:
+      "Learn why browser-local CSV and PDF parsing avoids sharing NetBanking passwords, how to safeguard PDF passwords, and what metadata is stored.",
+    summary:
+      "Compare local in-browser statement parsing with bank-login aggregators and understand what data Subscription X-Ray keeps off external servers.",
+    category: "Privacy & Safety",
+    readTime: "6 min read",
+    publishedAt: "2026-11-21",
+    updatedAt: "2026-11-21",
+    relatedSlugs: [
+      "find-hidden-subscriptions",
+      "read-bank-statements",
+      "hdfc-sbi-icici-automatic-payments",
     ],
   },
 ];

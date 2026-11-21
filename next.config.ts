@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "motion"],
+    optimizePackageImports: ["@phosphor-icons/react", "motion"],
   },
   async headers() {
     return [

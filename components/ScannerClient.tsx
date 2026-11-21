@@ -14,6 +14,7 @@ import { supabase, supabaseConfigured } from "@/lib/supabaseClient";
 import { isMissingColumnError, normalizeStatementName } from "@/lib/scanHistory";
 import AccountActions from "@/components/AccountActions";
 import BrandMark from "@/components/BrandMark";
+import { trackPurchaseSuccess } from "@/lib/analytics";
 import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 
 const Scanner = dynamic(() => import("@/components/Scanner"), {
@@ -117,6 +118,7 @@ export default function ScannerClient() {
             body: JSON.stringify({ orderId: cfOrderId }),
           });
           if (verifyRes.status === 200) {
+            trackPurchaseSuccess(cfOrderId);
             setPaymentNotice(
               `Payment confirmed — ${PACK_SIZE} scan credits added to your account.`
             );
@@ -198,7 +200,7 @@ export default function ScannerClient() {
               <li>
                 <strong>Smart noise filtering &amp; mandate labels:</strong>{" "}
                 Automatically excludes failed attempts, UPI reversals, salary
-                credits, and ₹1–₹2 mandate holds while labeling UPI AutoPay,
+                credits, and ₹1–₹5 mandate holds while labeling UPI AutoPay,
                 NACH e-mandates, and card standing instructions with confidence
                 scores.
               </li>

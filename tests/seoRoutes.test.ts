@@ -11,12 +11,13 @@ vi.mock("next/font/google", () => ({
 }));
 
 describe("SEO metadata routes", () => {
-  it("generates sitemap entries strictly for the 13 indexable public pages", () => {
+  it("generates sitemap entries strictly for all 20 indexable public pages", () => {
     const entries = sitemap();
     const urls = entries.map((entry) => entry.url);
 
     expect(urls).toEqual([
       "https://subscription-x-ray.vercel.app/",
+      "https://subscription-x-ray.vercel.app/how-it-works",
       "https://subscription-x-ray.vercel.app/guides",
       "https://subscription-x-ray.vercel.app/guides/find-upi-autopay-mandates",
       "https://subscription-x-ray.vercel.app/guides/cancel-upi-autopay",
@@ -24,6 +25,12 @@ describe("SEO metadata routes", () => {
       "https://subscription-x-ray.vercel.app/guides/identify-nach-emandate",
       "https://subscription-x-ray.vercel.app/guides/recurring-card-payments",
       "https://subscription-x-ray.vercel.app/guides/read-bank-statements",
+      "https://subscription-x-ray.vercel.app/guides/debit-card-recurring-payments",
+      "https://subscription-x-ray.vercel.app/guides/hdfc-sbi-icici-automatic-payments",
+      "https://subscription-x-ray.vercel.app/guides/calculate-monthly-subscription-spending",
+      "https://subscription-x-ray.vercel.app/guides/bank-statement-privacy-security",
+      "https://subscription-x-ray.vercel.app/faq",
+      "https://subscription-x-ray.vercel.app/compare",
       "https://subscription-x-ray.vercel.app/about",
       "https://subscription-x-ray.vercel.app/contact",
       "https://subscription-x-ray.vercel.app/terms",
@@ -54,7 +61,7 @@ describe("SEO metadata routes", () => {
     ).toBe(false);
   });
 
-  it("provides a 96x96 PNG favicon, favicon.ico, and apple-icon.png wired in layout metadata", () => {
+  it("provides a 96x96 PNG favicon, favicon.ico, apple-icon.png, and accurate public/llms.txt", () => {
     const icon96 = readFileSync(path.join(process.cwd(), "public/icon-96x96.png"));
     expect(icon96.subarray(0, 8)).toEqual(
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -82,11 +89,25 @@ describe("SEO metadata routes", () => {
     expect(homePage).toContain("₹3,896");
     expect(homePage).not.toContain("3,847");
     expect(homePage).toContain("10 MB");
+    expect(homePage).not.toMatch(/aggregateRating|reviewCount/);
+
+    const faqPage = readFileSync(path.join(process.cwd(), "app/faq/page.tsx"), "utf8");
+    expect(faqPage).toContain("FAQPage");
+    expect(faqPage).not.toMatch(/aggregateRating|reviewCount/);
+
+    const llmsTxtPath = path.join(process.cwd(), "public/llms.txt");
+    expect(existsSync(llmsTxtPath)).toBe(true);
+    const llmsTxt = readFileSync(llmsTxtPath, "utf8");
+    expect(llmsTxt).toContain("https://subscription-x-ray.vercel.app");
+    expect(llmsTxt).toContain("₹69");
+    expect(llmsTxt).toContain("12");
+    expect(llmsTxt).not.toMatch(/SUPABASE_SERVICE_ROLE|CASHFREE_SECRET|Bearer\s+/i);
   });
 
   it("ensures all routes have unique <=60 title, <=155 description, matching canonical and og:url, and noindex on gated auth routes", async () => {
     const { metadata: layoutMetadata } = await import("@/app/layout");
     const { metadata: homeMeta } = await import("@/app/page");
+    const { metadata: howItWorksMeta } = await import("@/app/how-it-works/page");
     const { metadata: guidesMeta } = await import("@/app/guides/page");
     const { metadata: g1Meta } = await import("@/app/guides/find-upi-autopay-mandates/page");
     const { metadata: g2Meta } = await import("@/app/guides/cancel-upi-autopay/page");
@@ -94,6 +115,12 @@ describe("SEO metadata routes", () => {
     const { metadata: g4Meta } = await import("@/app/guides/identify-nach-emandate/page");
     const { metadata: g5Meta } = await import("@/app/guides/recurring-card-payments/page");
     const { metadata: g6Meta } = await import("@/app/guides/read-bank-statements/page");
+    const { metadata: g7Meta } = await import("@/app/guides/debit-card-recurring-payments/page");
+    const { metadata: g8Meta } = await import("@/app/guides/hdfc-sbi-icici-automatic-payments/page");
+    const { metadata: g9Meta } = await import("@/app/guides/calculate-monthly-subscription-spending/page");
+    const { metadata: g10Meta } = await import("@/app/guides/bank-statement-privacy-security/page");
+    const { metadata: faqMeta } = await import("@/app/faq/page");
+    const { metadata: compareMeta } = await import("@/app/compare/page");
     const { metadata: aboutMeta } = await import("@/app/about/page");
     const { metadata: contactMeta } = await import("@/app/contact/page");
     const { metadata: loginMeta } = await import("@/app/login/page");
@@ -113,6 +140,7 @@ describe("SEO metadata routes", () => {
 
     const routes = [
       homeMeta,
+      howItWorksMeta,
       guidesMeta,
       g1Meta,
       g2Meta,
@@ -120,6 +148,12 @@ describe("SEO metadata routes", () => {
       g4Meta,
       g5Meta,
       g6Meta,
+      g7Meta,
+      g8Meta,
+      g9Meta,
+      g10Meta,
+      faqMeta,
+      compareMeta,
       aboutMeta,
       contactMeta,
       loginMeta,
@@ -210,5 +244,25 @@ describe("SEO metadata routes", () => {
       "utf8"
     );
     expect(loginClient).toContain("What your Subscription X-Ray account includes");
+    expect(loginClient).toContain("Browser-local statement parsing:");
+    expect(loginClient).not.toContain("100% browser-side parsing");
+
+    expect(scannerClient).toContain("₹1–₹5 mandate holds");
+    expect(scannerClient).not.toContain("₹1–₹2");
+
+    const guideLayout = readFileSync(
+      path.join(process.cwd(), "components/GuideLayout.tsx"),
+      "utf8"
+    );
+    expect(guideLayout).toContain("guide.updatedAt");
+    expect(guideLayout).not.toContain("Updated 18 Nov 2026");
+
+    const privacyPage = readFileSync(
+      path.join(process.cwd(), "app/privacy/page.tsx"),
+      "utf8"
+    );
+    expect(privacyPage).toContain("Google Tag Manager");
+    expect(privacyPage).toContain("Google Analytics 4");
+    expect(privacyPage).toContain("never sent through these analytics events");
   }, 15000);
 });

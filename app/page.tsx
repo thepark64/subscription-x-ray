@@ -6,12 +6,18 @@ import InteractiveDemo from "@/components/InteractiveDemo";
 import { RevealSection, TaglineReveal } from "@/components/MotionPrimitives";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
+import TrackedLink from "@/components/TrackedLink";
+import {
+  CANONICAL_SITE_URL,
+  PACK_PRICE_LABEL,
+  PACK_SIZE,
+  SUPPORT_EMAIL,
+} from "@/lib/config";
 import { GUIDES } from "@/lib/guides";
 
 const HOME_TITLE = "Find Recurring Payments & AutoPay | Subscription X-Ray";
 const HOME_DESCRIPTION =
-  "Scan Indian bank or card CSV & PDF statements in your browser to find recurring payments, UPI AutoPay mandates, and NACH debits — ₹69 for 12 scans.";
+  "See what's quietly leaving your account every month. Scan Indian bank CSV & PDF statements in your browser for AutoPay & NACH — ₹69 for 12 scans.";
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -25,11 +31,20 @@ export const metadata: Metadata = {
     description: HOME_DESCRIPTION,
     type: "website",
     url: "/",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: HOME_TITLE,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: HOME_TITLE,
     description: HOME_DESCRIPTION,
+    images: ["/twitter-image.png"],
   },
 };
 
@@ -42,6 +57,10 @@ const SAMPLE_CHARGES = [
 ];
 
 const FAQ_ITEMS = [
+  {
+    q: "How do I find recurring subscriptions in my bank statement?",
+    a: "Export 3 to 12 months of CSV or digital PDF statements from your bank or card portal and scan them inside your browser. Subscription X-Ray strips changing UPI RRNs and transaction noise, clusters repeating weekly, monthly, quarterly, or annual debits, and flags every likely recurring charge with its payment rail.",
+  },
   {
     q: "Is my bank statement actually private?",
     a: "Yes. CSV and PDF parsing, including unlocking password protected bank PDFs, happens strictly inside your browser. Your raw statement file and PDF password are never uploaded to or stored on any server.",
@@ -66,16 +85,34 @@ const FAQ_ITEMS = [
     q: "What happens if my uploaded statement shows zero recurring charges?",
     a: "Your empty scan summary is still saved in history for reference and zero scan credits are deducted from your balance. Only valid scans that surface at least one recurring charge consume a credit.",
   },
+  {
+    q: "How is this different from checking my UPI app AutoPay tab?",
+    a: "A single UPI app only shows mandates created inside that specific app. Auditing your actual bank and credit card statements reveals UPI AutoPay mandates from any app alongside bank NACH eMandates, card Standing Instructions, and forgotten annual renewals.",
+  },
 ];
+
+const FEATURED_GUIDES = GUIDES.slice(0, 6);
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "Organization",
+      "@id": `${CANONICAL_SITE_URL}/#organization`,
+      name: "Subscription X-Ray",
+      url: CANONICAL_SITE_URL,
+      logo: `${CANONICAL_SITE_URL}/icon-96x96.png`,
+      email: SUPPORT_EMAIL,
+    },
+    {
       "@type": "WebSite",
+      "@id": `${CANONICAL_SITE_URL}/#website`,
       name: "Subscription X-Ray",
       url: CANONICAL_SITE_URL,
       inLanguage: "en-IN",
+      publisher: {
+        "@id": `${CANONICAL_SITE_URL}/#organization`,
+      },
     },
     {
       "@type": "SoftwareApplication",
@@ -83,13 +120,27 @@ const STRUCTURED_DATA = {
       applicationCategory: "FinanceApplication",
       operatingSystem: "Web",
       url: CANONICAL_SITE_URL,
+      inLanguage: "en-IN",
+      publisher: {
+        "@id": `${CANONICAL_SITE_URL}/#organization`,
+      },
+      screenshot: `${CANONICAL_SITE_URL}/opengraph-image.png`,
       description:
-        "Local browser Indian bank and card CSV and PDF statement scanner to find recurring payments, UPI AutoPay mandates, NACH debits, and recurring card standing instructions.",
+        "Browser-local Indian bank and credit card CSV and PDF statement scanner that uncovers recurring payments, UPI AutoPay mandates, NACH debits, and recurring card standing instructions.",
+      featureList: [
+        "Browser-local CSV parsing (up to 10 MB and 100,000 rows)",
+        "Browser-local digital and password-protected PDF decoding (up to 10 MB)",
+        "UPI AutoPay, NACH eMandate, and Card Standing Instruction rail classification",
+        "Weekly, monthly, quarterly, and annual cadence detection with High, Medium, and Possible confidence scoring",
+        "Automatic filtering of failed payments, refunds, reversals, and ₹1–₹5 mandate holds",
+        "Official cancellation steps for Google Pay, PhonePe, Paytm, BHIM, NACH, and RBI SI Hub",
+      ],
       offers: {
         "@type": "Offer",
         price: "69",
         priceCurrency: "INR",
-        description: "12 never expiring statement scan credits (single payment)",
+        description:
+          "12 never-expiring statement scan credits (single payment; zero credit used if zero subscriptions found)",
       },
     },
     {
@@ -122,20 +173,25 @@ export default function Home() {
             <div className="hero">
               <div className="hero-copy">
                 <h1 className="hero-heading heading-1">
-                  Find hidden subscriptions
+                  See what&rsquo;s quietly leaving
                   <br />
-                  and UPI AutoPay in India
+                  your account every month
                 </h1>
                 <p className="hero-lede body-3">
-                  Scan Indian bank and credit card statements locally inside your
-                  browser to uncover forgotten subscriptions, UPI AutoPay
-                  mandates, and NACH debits before they renew.
+                  Scan your bank statement inside browser memory to uncover
+                  forgotten subscriptions, UPI AutoPay mandates, NACH debits,
+                  and recurring card charges — and take control of your money.
                 </p>
                 <div className="cta-row">
-                  <Link className="btn btn-primary button-md" href="/scanner">
+                  <TrackedLink
+                    className="btn btn-primary button-md"
+                    href="/scanner"
+                    trackLocation="hero"
+                    trackLabel="Scan my statement for ₹69"
+                  >
                     <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                     <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
+                  </TrackedLink>
                   <a className="btn btn-ghost button-md" href="#demo">
                     Try interactive sample
                   </a>
@@ -184,16 +240,22 @@ export default function Home() {
         <section id="how" className="landing-section">
           <div className="wrap">
             <RevealSection>
-              <div className="section-header">
-                <p className="eyebrow caption-3">How it works</p>
-                <h2 className="heading-3">
-                  Built for Indian bank statements, UPI AutoPay, and NACH debits
-                </h2>
-                <p className="lede body-3">
-                  Checking one UPI app misses credit card standing instructions
-                  and bank account NACH mandates. Auditing your statement lines
-                  brings every recurring debit into one place.
-                </p>
+              <div className="guides-section-head">
+                <div className="section-header">
+                  <p className="eyebrow caption-3">How it works</p>
+                  <h2 className="heading-3">
+                    Built for Indian bank statements, UPI AutoPay, and NACH
+                    debits
+                  </h2>
+                  <p className="lede body-3">
+                    Checking one UPI app misses credit card standing
+                    instructions and bank account NACH mandates. Auditing your
+                    statement lines brings every recurring debit into one place.
+                  </p>
+                </div>
+                <Link href="/how-it-works" className="text-link title-4">
+                  Full technical &amp; privacy architecture
+                </Link>
               </div>
 
               <div className="steps-grid">
@@ -253,7 +315,8 @@ export default function Home() {
                     protected PDF statements (up to 10 MB) from major Indian
                     banks and credit cards. Detects weekly, monthly, quarterly,
                     and annual cycles while filtering reversals, refunds, and ₹1
-                    to ₹5 setup holds.
+                    to ₹5 setup holds. See our{" "}
+                    <Link href="/compare">approach comparison</Link>.
                   </p>
                 </div>
                 <div className="surface-card formats-card">
@@ -294,7 +357,8 @@ export default function Home() {
               <div className="section-header">
                 <p className="eyebrow caption-3">Interactive preview</p>
                 <h2 className="heading-3">
-                  Test recurring payment detection on synthetic Indian statements
+                  Test recurring payment detection on synthetic Indian
+                  statements
                 </h2>
               </div>
               <InteractiveDemo />
@@ -384,13 +448,15 @@ export default function Home() {
                       </span>
                     </li>
                   </ul>
-                  <Link
+                  <TrackedLink
                     className="btn btn-primary button-md full"
                     href="/scanner"
+                    trackLocation="pricing_card"
+                    trackLabel="Scan my statement for ₹69"
                   >
                     <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                     <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
+                  </TrackedLink>
                   <p className="small-note caption-2">
                     Each Cashfree verified pack adds {PACK_SIZE} non expiring
                     scans to your account.
@@ -416,7 +482,7 @@ export default function Home() {
                 </Link>
               </div>
               <div className="guides-grid">
-                {GUIDES.map((guide) => (
+                {FEATURED_GUIDES.map((guide) => (
                   <article className="surface-card guide-card" key={guide.slug}>
                     <div className="guide-card-meta caption-4">
                       <span>{guide.category}</span>
@@ -441,9 +507,14 @@ export default function Home() {
         <section id="faq" className="landing-section">
           <div className="wrap">
             <RevealSection>
-              <div className="section-header">
-                <p className="eyebrow caption-3">FAQ</p>
-                <h2 className="heading-3">Common questions</h2>
+              <div className="guides-section-head">
+                <div className="section-header">
+                  <p className="eyebrow caption-3">FAQ</p>
+                  <h2 className="heading-3">Common questions</h2>
+                </div>
+                <Link href="/faq" className="text-link title-4">
+                  Open full FAQ &amp; answer hub
+                </Link>
               </div>
               <div className="faq-list">
                 {FAQ_ITEMS.map((item) => (
@@ -472,10 +543,15 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="final-cta-actions">
-                  <Link className="btn btn-primary button-md" href="/scanner">
+                  <TrackedLink
+                    className="btn btn-primary button-md"
+                    href="/scanner"
+                    trackLocation="final_cta"
+                    trackLabel="Scan my statement for ₹69"
+                  >
                     <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                     <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
+                  </TrackedLink>
                 </div>
               </div>
             </RevealSection>

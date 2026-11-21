@@ -50,7 +50,7 @@ export default function PrivacyPage() {
               <span>Subscription X-Ray</span>
             </Link>
             <h1>Privacy Policy</h1>
-            <p className="legal-updated">Last updated: 18 November 2026</p>
+            <p className="legal-updated">Last updated: 21 November 2026</p>
 
           <section>
             <h2>1. What we never upload or collect</h2>
@@ -100,9 +100,19 @@ export default function PrivacyPage() {
             <p>
               We use Supabase for authentication and encrypted PostgreSQL
               storage, Cashfree Payments for ₹69 pack checkout verification, and
-              Vercel for hosting and privacy-friendly web analytics. Each
-              provider processes data under its own privacy policy solely to
-              deliver these functions.
+              Vercel for hosting and privacy-friendly web analytics. We also use
+              Google Tag Manager and Google Analytics 4 to measure anonymous
+              product-funnel events (such as button clicks, interactive synthetic
+              demo usage, sign-up completion, checkout initiation, verified pack
+              purchases, and aggregate scan completion flags like file format,
+              detected item count, and credit usage).
+            </p>
+            <p>
+              Bank statement contents, transaction descriptions, merchant names,
+              uploaded filenames, PDF passwords, and personal financial totals
+              are never sent through these analytics events. Standard page URL
+              and browser request metadata handled by each provider is governed
+              by that provider&apos;s own privacy policy.
             </p>
           </section>
 

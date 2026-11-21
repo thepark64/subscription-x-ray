@@ -3,7 +3,7 @@ import { CANONICAL_SITE_URL } from "@/lib/config";
 import { GUIDES } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date("2026-11-18T00:00:00.000Z");
+  const lastModified = new Date("2026-11-21T00:00:00.000Z");
 
   return [
     {
@@ -11,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified,
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${CANONICAL_SITE_URL}/how-it-works`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.9,
     },
     {
       url: `${CANONICAL_SITE_URL}/guides`,
@@ -24,6 +30,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.85,
     })),
+    {
+      url: `${CANONICAL_SITE_URL}/faq`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${CANONICAL_SITE_URL}/compare`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     {
       url: `${CANONICAL_SITE_URL}/about`,
       lastModified,

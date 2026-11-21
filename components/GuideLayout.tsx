@@ -2,8 +2,34 @@ import Link from "next/link";
 import { ArrowRight, CaretRight } from "@phosphor-icons/react/ssr";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import TrackedLink from "@/components/TrackedLink";
 import { CANONICAL_SITE_URL, PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 import { getRelatedGuides, type GuideMeta } from "@/lib/guides";
+
+const GUIDE_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+function formatGuideDate(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!match) return isoDate;
+  const [, year, monthStr, dayStr] = match;
+  const monthIndex = Number(monthStr) - 1;
+  const monthLabel = GUIDE_MONTHS[monthIndex];
+  if (!monthLabel) return isoDate;
+  return `${Number(dayStr)} ${monthLabel} ${year}`;
+}
 
 export default function GuideLayout({
   guide,
@@ -14,6 +40,7 @@ export default function GuideLayout({
 }) {
   const related = getRelatedGuides(guide.slug);
   const canonicalUrl = `${CANONICAL_SITE_URL}${guide.href}`;
+  const formattedUpdatedDate = formatGuideDate(guide.updatedAt);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -97,7 +124,9 @@ export default function GuideLayout({
                 <span aria-hidden="true">·</span>
                 <span>{guide.readTime}</span>
                 <span aria-hidden="true">·</span>
-                <span>Updated 18 Nov 2026</span>
+                <time dateTime={guide.updatedAt}>
+                  Updated {formattedUpdatedDate}
+                </time>
               </div>
               <h1 className="heading-3">{guide.title}</h1>
               <p className="guide-summary body-3">{guide.summary}</p>
@@ -119,10 +148,15 @@ export default function GuideLayout({
                 </p>
               </div>
               <div className="guide-cta-actions">
-                <Link className="btn btn-primary button-md" href="/scanner">
+                <TrackedLink
+                  className="btn btn-primary button-md"
+                  href="/scanner"
+                  trackLocation={`guide_${guide.slug}`}
+                  trackLabel="Scan my statement for ₹69"
+                >
                   <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                   <ArrowRight size={16} aria-hidden="true" />
-                </Link>
+                </TrackedLink>
                 <Link className="btn btn-ghost button-md" href="/#demo">
                   Try interactive sample
                 </Link>
