@@ -78,6 +78,7 @@ describe("analyzeCsv", () => {
     const netflix = r.subscriptions.find((s) => s.merchant === "Netflix")!;
     expect(netflix.frequency).toBe("monthly");
     expect(netflix.occurrences).toBe(3);
+    expect(netflix.lastChargeDate).toBe("2024-03-06");
     expect(netflix.service?.url).toContain("netflix.com");
     expect(r.monthlyTotal).toBeCloseTo(649 + 119, 0);
   });

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
-import { GUIDES } from "@/lib/guides";
+import { GUIDES, HELP_CENTER_CATEGORIES } from "@/lib/guides";
 
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "--font-sans" }),
@@ -11,24 +11,16 @@ vi.mock("next/font/google", () => ({
 }));
 
 describe("SEO metadata routes", () => {
-  it("generates sitemap entries strictly for all 20 indexable public pages", () => {
+  it("generates sitemap entries strictly for all 30 indexable public pages", () => {
     const entries = sitemap();
     const urls = entries.map((entry) => entry.url);
 
     expect(urls).toEqual([
       "https://subscription-x-ray.vercel.app/",
       "https://subscription-x-ray.vercel.app/how-it-works",
+      "https://subscription-x-ray.vercel.app/help",
       "https://subscription-x-ray.vercel.app/guides",
-      "https://subscription-x-ray.vercel.app/guides/find-upi-autopay-mandates",
-      "https://subscription-x-ray.vercel.app/guides/cancel-upi-autopay",
-      "https://subscription-x-ray.vercel.app/guides/find-hidden-subscriptions",
-      "https://subscription-x-ray.vercel.app/guides/identify-nach-emandate",
-      "https://subscription-x-ray.vercel.app/guides/recurring-card-payments",
-      "https://subscription-x-ray.vercel.app/guides/read-bank-statements",
-      "https://subscription-x-ray.vercel.app/guides/debit-card-recurring-payments",
-      "https://subscription-x-ray.vercel.app/guides/hdfc-sbi-icici-automatic-payments",
-      "https://subscription-x-ray.vercel.app/guides/calculate-monthly-subscription-spending",
-      "https://subscription-x-ray.vercel.app/guides/bank-statement-privacy-security",
+      ...GUIDES.map((guide) => `https://subscription-x-ray.vercel.app${guide.href}`),
       "https://subscription-x-ray.vercel.app/faq",
       "https://subscription-x-ray.vercel.app/compare",
       "https://subscription-x-ray.vercel.app/about",
@@ -37,7 +29,7 @@ describe("SEO metadata routes", () => {
       "https://subscription-x-ray.vercel.app/privacy",
       "https://subscription-x-ray.vercel.app/refund",
     ]);
-
+    expect(urls).toHaveLength(30);
     expect(urls.some((u) => /\/(api|login|scanner|reset-password)/.test(u))).toBe(false);
   });
 
@@ -89,6 +81,8 @@ describe("SEO metadata routes", () => {
     expect(homePage).toContain("₹3,896");
     expect(homePage).not.toContain("3,847");
     expect(homePage).toContain("10 MB");
+    expect(homePage).toContain("Still Paying for Something You Forgot?");
+    expect(homePage).toContain("Find My Forgotten Subscriptions");
     expect(homePage).not.toMatch(/aggregateRating|reviewCount/);
 
     const faqPage = readFileSync(path.join(process.cwd(), "app/faq/page.tsx"), "utf8");
@@ -99,6 +93,7 @@ describe("SEO metadata routes", () => {
     expect(existsSync(llmsTxtPath)).toBe(true);
     const llmsTxt = readFileSync(llmsTxtPath, "utf8");
     expect(llmsTxt).toContain("https://subscription-x-ray.vercel.app");
+    expect(llmsTxt).toContain("https://subscription-x-ray.vercel.app/help");
     expect(llmsTxt).toContain("₹69");
     expect(llmsTxt).toContain("12");
     expect(llmsTxt).not.toMatch(/SUPABASE_SERVICE_ROLE|CASHFREE_SECRET|Bearer\s+/i);
@@ -108,6 +103,7 @@ describe("SEO metadata routes", () => {
     const { metadata: layoutMetadata } = await import("@/app/layout");
     const { metadata: homeMeta } = await import("@/app/page");
     const { metadata: howItWorksMeta } = await import("@/app/how-it-works/page");
+    const { metadata: helpMeta } = await import("@/app/help/page");
     const { metadata: guidesMeta } = await import("@/app/guides/page");
     const { metadata: g1Meta } = await import("@/app/guides/find-upi-autopay-mandates/page");
     const { metadata: g2Meta } = await import("@/app/guides/cancel-upi-autopay/page");
@@ -119,6 +115,15 @@ describe("SEO metadata routes", () => {
     const { metadata: g8Meta } = await import("@/app/guides/hdfc-sbi-icici-automatic-payments/page");
     const { metadata: g9Meta } = await import("@/app/guides/calculate-monthly-subscription-spending/page");
     const { metadata: g10Meta } = await import("@/app/guides/bank-statement-privacy-security/page");
+    const { metadata: g11Meta } = await import("@/app/guides/find-forgotten-subscriptions/page");
+    const { metadata: g12Meta } = await import("@/app/guides/cancel-credit-card-subscriptions/page");
+    const { metadata: g13Meta } = await import("@/app/guides/stop-recurring-card-payments/page");
+    const { metadata: g14Meta } = await import("@/app/guides/cancel-nach-mandate/page");
+    const { metadata: g15Meta } = await import("@/app/guides/cancel-google-play-subscription/page");
+    const { metadata: g16Meta } = await import("@/app/guides/cancel-apple-subscription/page");
+    const { metadata: g17Meta } = await import("@/app/guides/identify-unknown-bank-debits/page");
+    const { metadata: g18Meta } = await import("@/app/guides/find-hidden-subscriptions-bank-statement/page");
+    const { metadata: g19Meta } = await import("@/app/guides/stop-forgotten-free-trials/page");
     const { metadata: faqMeta } = await import("@/app/faq/page");
     const { metadata: compareMeta } = await import("@/app/compare/page");
     const { metadata: aboutMeta } = await import("@/app/about/page");
@@ -141,6 +146,7 @@ describe("SEO metadata routes", () => {
     const routes = [
       homeMeta,
       howItWorksMeta,
+      helpMeta,
       guidesMeta,
       g1Meta,
       g2Meta,
@@ -152,6 +158,15 @@ describe("SEO metadata routes", () => {
       g8Meta,
       g9Meta,
       g10Meta,
+      g11Meta,
+      g12Meta,
+      g13Meta,
+      g14Meta,
+      g15Meta,
+      g16Meta,
+      g17Meta,
+      g18Meta,
+      g19Meta,
       faqMeta,
       compareMeta,
       aboutMeta,
@@ -205,6 +220,17 @@ describe("SEO metadata routes", () => {
     expect(twDescriptions.size).toBe(routes.length);
     expect(canonicals.size).toBe(routes.length);
 
+    expect(HELP_CENTER_CATEGORIES).toEqual([
+      "Find Forgotten Subscriptions",
+      "Cancel Credit Card Subscriptions",
+      "Stop UPI AutoPay",
+      "Cancel NACH Mandates",
+      "Cancel Google Play Subscriptions",
+      "Cancel Apple Subscriptions",
+      "Identify Unknown Bank Charges",
+      "Stop Free Trial Renewals",
+    ]);
+
     for (const guide of GUIDES) {
       const filePath = path.join(
         process.cwd(),
@@ -213,10 +239,28 @@ describe("SEO metadata routes", () => {
         "page.tsx"
       );
       expect(existsSync(filePath)).toBe(true);
+      expect(guide.helpCategories.length).toBeGreaterThanOrEqual(1);
       for (const rel of guide.relatedSlugs) {
         expect(GUIDES.some((g) => g.slug === rel)).toBe(true);
       }
     }
+
+    const helpPage = readFileSync(
+      path.join(process.cwd(), "app/help/page.tsx"),
+      "utf8"
+    );
+    expect(helpPage).toContain(
+      "Forgotten a Subscription? Find It and Stop Unwanted Charges."
+    );
+
+    const scannerSource = readFileSync(
+      path.join(process.cwd(), "components/Scanner.tsx"),
+      "utf8"
+    );
+    expect(scannerSource).toContain("How to Cancel");
+    expect(scannerSource).toContain(
+      "Subscription X-Ray identifies recurring payment patterns from your"
+    );
 
     const brandMark = readFileSync(
       path.join(process.cwd(), "components/BrandMark.tsx"),

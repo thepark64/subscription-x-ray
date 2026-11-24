@@ -467,19 +467,135 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="forgotten-subscriptions" className="landing-section">
+          <div className="wrap">
+            <RevealSection>
+              <div className="surface-card surface-warm discovery-banner">
+                <div className="discovery-banner-copy">
+                  <p className="eyebrow caption-3">
+                    Forgotten subscription finder
+                  </p>
+                  <h2 className="heading-3">
+                    Still Paying for Something You Forgot?
+                  </h2>
+                  <p className="body-3">
+                    Old subscriptions, forgotten free trials and automatic
+                    payments can quietly drain your bank account. Find recurring
+                    charges before they cost you another month.
+                  </p>
+                </div>
+                <div className="discovery-banner-actions">
+                  <TrackedLink
+                    className="btn btn-primary button-md"
+                    href="/scanner"
+                    trackLocation="discovery_banner"
+                    trackLabel="Find My Forgotten Subscriptions"
+                  >
+                    <span>Find My Forgotten Subscriptions</span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </TrackedLink>
+                  <Link className="btn btn-ghost button-md" href="/help">
+                    Open Cancellation Help Center
+                  </Link>
+                </div>
+              </div>
+
+              <div className="education-grid">
+                <article className="surface-card education-card">
+                  <h3 className="title-2">Forgotten subscriptions explained</h3>
+                  <p className="body-6">
+                    Small OTT plans, cloud storage upgrades, and annual trials
+                    often renew across separate UPI apps, cards, and app stores.
+                    See{" "}
+                    <Link href="/guides/find-forgotten-subscriptions">
+                      how to find forgotten subscriptions
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/guides/stop-forgotten-free-trials">
+                      stop forgotten free trials
+                    </Link>
+                    .
+                  </p>
+                </article>
+
+                <article className="surface-card education-card">
+                  <h3 className="title-2">
+                    How to identify recurring bank debits
+                  </h3>
+                  <p className="body-6">
+                    Statement lines often show payment gateways or parent legal
+                    entities rather than app names. Learn{" "}
+                    <Link href="/guides/identify-unknown-bank-debits">
+                      how to identify unknown bank debits
+                    </Link>{" "}
+                    and audit 6–13 months via{" "}
+                    <Link href="/guides/find-hidden-subscriptions-bank-statement">
+                      hidden bank statement subscriptions
+                    </Link>
+                    .
+                  </p>
+                </article>
+
+                <article className="surface-card education-card">
+                  <h3 className="title-2">
+                    How to cancel unwanted automatic payments
+                  </h3>
+                  <p className="body-6">
+                    Deleting an app never cancels billing. End your plan with
+                    the merchant or{" "}
+                    <Link href="/guides/cancel-google-play-subscription">
+                      Google Play
+                    </Link>{" "}
+                    /{" "}
+                    <Link href="/guides/cancel-apple-subscription">
+                      Apple Account
+                    </Link>
+                    , then verify the underlying mandate in{" "}
+                    <Link href="/help">the Help Center</Link>.
+                  </p>
+                </article>
+
+                <article className="surface-card education-card">
+                  <h3 className="title-2">
+                    Credit card recurring payments, UPI AutoPay &amp; NACH
+                  </h3>
+                  <p className="body-6">
+                    Each rail has a different stop path: revoke{" "}
+                    <Link href="/guides/cancel-upi-autopay">UPI AutoPay</Link>{" "}
+                    inside your UPI app, withdraw{" "}
+                    <Link href="/guides/cancel-credit-card-subscriptions">
+                      credit card mandates
+                    </Link>{" "}
+                    in SI Hub, or cancel{" "}
+                    <Link href="/guides/cancel-nach-mandate">
+                      NACH eMandates
+                    </Link>{" "}
+                    with your bank.
+                  </p>
+                </article>
+              </div>
+            </RevealSection>
+          </div>
+        </section>
+
         <section id="guides" className="landing-section">
           <div className="wrap">
             <RevealSection>
               <div className="guides-section-head">
                 <div>
-                  <p className="eyebrow caption-3">Statement guides</p>
+                  <p className="eyebrow caption-3">Help center &amp; guides</p>
                   <h2 className="heading-3">
-                    Decode automatic bank payments before you cancel
+                    Decode and cancel automatic payments safely
                   </h2>
                 </div>
-                <Link href="/guides" className="text-link title-4">
-                  View all {GUIDES.length} guides
-                </Link>
+                <div className="guides-head-links">
+                  <Link href="/help" className="text-link title-4">
+                    Search Help Center
+                  </Link>
+                  <Link href="/guides" className="text-link title-4">
+                    View all {GUIDES.length} guides
+                  </Link>
+                </div>
               </div>
               <div className="guides-grid">
                 {FEATURED_GUIDES.map((guide) => (
@@ -524,6 +640,11 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <p className="home-safety-footnote caption-2">
+                Subscription X-Ray identifies recurring payment patterns from
+                your uploaded statement. It does not access your bank account,
+                cancel subscriptions, revoke mandates or reverse payments.
+              </p>
             </RevealSection>
           </div>
         </section>

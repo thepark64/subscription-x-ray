@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
+import { GUIDES } from "@/lib/guides";
 
 export default function SiteFooter() {
   return (
@@ -23,6 +24,11 @@ export default function SiteFooter() {
             <li>
               <Link href="/scanner" className="body-6">
                 Statement scanner
+              </Link>
+            </li>
+            <li>
+              <Link href="/help" className="body-6">
+                Cancellation Help Center
               </Link>
             </li>
             <li>
@@ -53,17 +59,17 @@ export default function SiteFooter() {
           </ul>
         </nav>
 
-        <nav className="footer-col" aria-label="Statement guides">
-          <h3 className="title-4">Guides</h3>
+        <nav className="footer-col" aria-label="Statement and cancellation guides">
+          <h3 className="title-4">Help &amp; Guides</h3>
           <ul>
             <li>
               <Link href="/guides" className="body-6">
-                All 10 statement guides
+                All {GUIDES.length} statement guides
               </Link>
             </li>
             <li>
-              <Link href="/guides/find-upi-autopay-mandates" className="body-6">
-                Find UPI AutoPay mandates
+              <Link href="/guides/find-forgotten-subscriptions" className="body-6">
+                Find forgotten subscriptions
               </Link>
             </li>
             <li>
@@ -72,29 +78,28 @@ export default function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/guides/find-hidden-subscriptions" className="body-6">
-                Find hidden subscriptions
+              <Link href="/guides/cancel-credit-card-subscriptions" className="body-6">
+                Cancel credit card subscriptions
               </Link>
             </li>
             <li>
-              <Link
-                href="/guides/hdfc-sbi-icici-automatic-payments"
-                className="body-6"
-              >
-                HDFC, SBI &amp; ICICI statements
+              <Link href="/guides/cancel-nach-mandate" className="body-6">
+                Cancel NACH mandates
               </Link>
             </li>
             <li>
-              <Link
-                href="/guides/calculate-monthly-subscription-spending"
-                className="body-6"
-              >
-                Calculate monthly spend
+              <Link href="/guides/cancel-google-play-subscription" className="body-6">
+                Cancel Google Play
               </Link>
             </li>
             <li>
-              <Link href="/guides/debit-card-recurring-payments" className="body-6">
-                Debit card recurring charges
+              <Link href="/guides/cancel-apple-subscription" className="body-6">
+                Cancel Apple subscriptions
+              </Link>
+            </li>
+            <li>
+              <Link href="/guides/identify-unknown-bank-debits" className="body-6">
+                Identify unknown bank debits
               </Link>
             </li>
           </ul>

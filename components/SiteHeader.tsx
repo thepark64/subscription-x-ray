@@ -46,14 +46,14 @@ export default function SiteHeader({
           { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "#demo", label: "Sample scan", isAnchor: true },
           { href: "#pricing", label: "Pricing", isAnchor: true },
+          { href: "/help", label: "Help Center", isAnchor: false },
           { href: "/guides", label: "Guides", isAnchor: false },
-          { href: "/faq", label: "FAQ", isAnchor: false },
         ]
       : [
           { href: "/", label: "Home", isAnchor: false },
           { href: "/how-it-works", label: "How it works", isAnchor: false },
+          { href: "/help", label: "Help Center", isAnchor: false },
           { href: "/guides", label: "Guides", isAnchor: false },
-          { href: "/compare", label: "Compare", isAnchor: false },
           { href: "/faq", label: "FAQ", isAnchor: false },
         ];
 
@@ -63,6 +63,7 @@ export default function SiteHeader({
           { href: "/how-it-works", label: "How it works", isAnchor: false },
           { href: "#demo", label: "Sample scan", isAnchor: true },
           { href: "#pricing", label: "Pricing", isAnchor: true },
+          { href: "/help", label: "Help Center", isAnchor: false },
           { href: "/guides", label: "Statement guides", isAnchor: false },
           { href: "/compare", label: "Compare approaches", isAnchor: false },
           { href: "/faq", label: "FAQ", isAnchor: false },
@@ -70,6 +71,7 @@ export default function SiteHeader({
       : [
           { href: "/", label: "Home", isAnchor: false },
           { href: "/how-it-works", label: "How it works", isAnchor: false },
+          { href: "/help", label: "Help Center", isAnchor: false },
           { href: "/guides", label: "Statement guides", isAnchor: false },
           { href: "/compare", label: "Compare approaches", isAnchor: false },
           { href: "/faq", label: "FAQ", isAnchor: false },

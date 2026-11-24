@@ -29,9 +29,22 @@ describe("services and cancellation guidance", () => {
     const nach = getCancellationGuidance("Cult.fit", "nach_emandate");
     expect(nach.title).toMatch(/NACH/i);
     expect(nach.appShortcuts).toBeUndefined();
+    expect(nach.guideHref).toBe("/guides/cancel-nach-mandate");
 
     const card = getCancellationGuidance("Netflix", "card_si");
     expect(card.title).toMatch(/Standing Instruction/i);
     expect(card.appShortcuts).toBeUndefined();
+    expect(card.guideHref).toBe("/guides/cancel-credit-card-subscriptions");
+  });
+
+  it("routes Apple, Google Play, and unknown merchants to tailored Help Center guides", () => {
+    const apple = getCancellationGuidance("APPLE.COM/BILL", "card_si");
+    expect(apple.guideHref).toBe("/guides/cancel-apple-subscription");
+
+    const play = getCancellationGuidance("Google Play Apps", "upi");
+    expect(play.guideHref).toBe("/guides/cancel-google-play-subscription");
+
+    const unknown = getCancellationGuidance("SOME AGGREGATOR 99");
+    expect(unknown.guideHref).toBe("/guides/identify-unknown-bank-debits");
   });
 });

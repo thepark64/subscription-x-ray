@@ -27,6 +27,7 @@ export type Subscription = {
   paymentRail?: PaymentRail;
   confidence?: ConfidenceLevel;
   detectionReason?: string;
+  lastChargeDate?: string;
 };
 
 export type ScanResult = {
@@ -607,6 +608,7 @@ export function detectRecurringSubscriptions(
       paymentRail,
       confidence,
       detectionReason,
+      lastChargeDate: latest.date.toISOString().slice(0, 10),
       service: service
         ? {
             name: service.name,

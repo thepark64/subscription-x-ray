@@ -91,6 +91,8 @@ export function classifySubscriptionCategory(merchant: string, knownCategory?: S
 export type CancellationGuidance = {
   title: string;
   steps: string[];
+  guideHref: string;
+  guideLabel: string;
   appShortcuts?: Array<{ app: string; path: string }>;
 };
 
@@ -107,52 +109,92 @@ export function getCancellationGuidance(
 ): CancellationGuidance {
   const known = findKnownService(merchant);
   const steps: string[] = [];
+  const isGooglePlay = known?.name === "Google Play";
+  const isApple = known?.name === "Apple";
 
   if (known?.cancelTip) {
     steps.push(`${known.name}: ${known.cancelTip}`);
   } else {
     steps.push(
-      `Sign in to your ${merchant} account billing/subscription settings and turn off auto-renewal.`
+      `Check your email receipts or sign in to ${merchant} billing settings to turn off auto-renewal directly.`
     );
+  }
+
+  if (isGooglePlay) {
+    steps.push(
+      "Uninstalling an Android app does not cancel its billing—open Google Play > Payments & subscriptions > Subscriptions to cancel."
+    );
+    return {
+      title: "Cancel Google Play subscription",
+      steps,
+      guideHref: "/guides/cancel-google-play-subscription",
+      guideLabel: "Open Google Play cancellation guide",
+      ...(paymentRail === "upi_autopay" || paymentRail === "upi"
+        ? { appShortcuts: UPI_AUTOPAY_SHORTCUTS }
+        : {}),
+    };
+  }
+
+  if (isApple) {
+    steps.push(
+      "Open iPhone/iPad Settings > Apple Account > Subscriptions (or Account Settings on Mac) to turn off renewal."
+    );
+    return {
+      title: "Cancel Apple subscription",
+      steps,
+      guideHref: "/guides/cancel-apple-subscription",
+      guideLabel: "Open Apple subscription cancellation guide",
+    };
   }
 
   if (paymentRail === "upi_autopay" || paymentRail === "upi") {
     steps.push(
-      "Also revoke the UPI AutoPay mandate inside the UPI app you approved it with so no further debits can run."
+      "Also open the UPI app where you originally approved AutoPay and pause or revoke the mandate so no future debits execute."
     );
     return {
       title: "Cancel merchant & revoke UPI AutoPay",
       steps,
+      guideHref: "/guides/cancel-upi-autopay",
+      guideLabel: "Open UPI AutoPay cancellation guide",
       appShortcuts: UPI_AUTOPAY_SHORTCUTS,
     };
   }
 
   if (paymentRail === "nach_emandate") {
     steps.push(
-      "For NACH / bank e-Mandates, open your bank NetBanking -> BillPay / e-Mandates / Standing Instructions and cancel the active mandate (banks usually apply changes 2–3 working days before debit)."
+      "For NACH / bank e-Mandates, locate your UMRN in NetBanking under e-Mandates / Standing Instructions or contact your bank or registered biller to submit a cancellation request and save confirmation."
     );
     return {
       title: "Cancel merchant & NACH e-Mandate",
       steps,
+      guideHref: "/guides/cancel-nach-mandate",
+      guideLabel: "Open NACH mandate cancellation guide",
     };
   }
 
   if (paymentRail === "card_si") {
     steps.push(
-      "For recurring card charges, check your issuing bank's Card Standing Instruction Hub (RBI SI Hub portal linked in your bank app/NetBanking) to revoke card-on-file auto-debits."
+      "For recurring card charges, check your issuing bank's Card Standing Instruction Hub (SI Hub) in NetBanking or card portal to withdraw domestic e-mandates, and verify with the merchant directly."
     );
     return {
       title: "Cancel merchant & card Standing Instruction",
       steps,
+      guideHref: "/guides/cancel-credit-card-subscriptions",
+      guideLabel: "Open credit card cancellation guide",
     };
   }
 
   steps.push(
-    "If you billed via Apple App Store, Google Play, or UPI AutoPay, cancel inside that store or UPI app's Autopay section as well."
+    "Because the exact payment rail was not specified in the statement text, check your UPI app AutoPay/Mandates tab, bank NetBanking SI Hub, Google Play, and Apple Subscriptions."
+  );
+  steps.push(
+    "If you do not recognize the merchant descriptor at all, compare the amount against email invoices before contacting your bank."
   );
 
   return {
-    title: "Cancellation checklist",
+    title: "General cancellation checklist",
     steps,
+    guideHref: "/guides/identify-unknown-bank-debits",
+    guideLabel: "Identify unknown debits & open Help Center",
   };
 }

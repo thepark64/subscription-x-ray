@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, LazyMotion, domAnimation, m } from "motion/react";
 import {
@@ -96,6 +97,22 @@ function normalizeFrequency(freq: string): Frequency {
     return freq;
   }
   return "monthly";
+}
+
+function formatInrAmount(value: number): string {
+  return `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+}
+
+function formatLastChargeDate(isoDate?: string): string {
+  if (!isoDate) return "From saved scan";
+  const parsed = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return isoDate;
+  return parsed.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 type ScanPhase = "idle" | "reading" | "parsing" | "saving";
@@ -1364,10 +1381,35 @@ export default function Scanner({
                             )}
                           </div>
                           <span className="subscription-meta">
-                            {sub.frequency} · {sub.occurrences} charges ·{" "}
                             {getSubscriptionCategory(sub)}
                             {sub.detectionReason ? ` · ${sub.detectionReason}` : ""}
                           </span>
+                          <dl className="sub-metrics-row">
+                            <div className="sub-metric-item">
+                              <dt>Transaction</dt>
+                              <dd>{formatInrAmount(sub.amount)}</dd>
+                            </div>
+                            <div className="sub-metric-item">
+                              <dt>Est. monthly</dt>
+                              <dd>{formatInrAmount(sub.monthlyEquivalent)}/mo</dd>
+                            </div>
+                            <div className="sub-metric-item">
+                              <dt>Est. yearly</dt>
+                              <dd>{formatInrAmount(sub.monthlyEquivalent * 12)}/yr</dd>
+                            </div>
+                            <div className="sub-metric-item">
+                              <dt>Frequency</dt>
+                              <dd>{sub.frequency}</dd>
+                            </div>
+                            <div className="sub-metric-item">
+                              <dt>Last detected</dt>
+                              <dd>{formatLastChargeDate(sub.lastChargeDate)}</dd>
+                            </div>
+                            <div className="sub-metric-item">
+                              <dt>Repeated</dt>
+                              <dd>{sub.occurrences} charges</dd>
+                            </div>
+                          </dl>
                           <div className="subscription-action-row">
                             {sub.service && (
                               <a
@@ -1389,12 +1431,7 @@ export default function Scanner({
                               }
                             >
                               <Question size={14} aria-hidden="true" />
-                              <span>
-                                {sub.paymentRail === "upi_autopay" ||
-                                sub.paymentRail === "upi"
-                                  ? "How to cancel / revoke AutoPay"
-                                  : "How to cancel"}
-                              </span>
+                              <span>How to Cancel</span>
                               {guideOpen ? (
                                 <CaretUp size={14} aria-hidden="true" />
                               ) : (
@@ -1426,14 +1463,24 @@ export default function Scanner({
                                   ))}
                                 </div>
                               )}
+                              <div className="cancel-guide-footer">
+                                <Link
+                                  href={guidance.guideHref}
+                                  className="cancel-guide-link"
+                                >
+                                  <span>{guidance.guideLabel}</span>
+                                  <ArrowUpRight size={13} aria-hidden="true" />
+                                </Link>
+                                <span className="cancel-guide-note">
+                                  Steps vary by bank, payment app, merchant, and
+                                  account type.
+                                </span>
+                              </div>
                             </div>
                           )}
                         </div>
                         <div className="subscription-price">
-                          ₹
-                          {sub.monthlyEquivalent.toLocaleString("en-IN", {
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatInrAmount(sub.monthlyEquivalent)}
                           <small>/mo</small>
                         </div>
                       </div>
@@ -1479,13 +1526,22 @@ export default function Scanner({
             </div>
           )}
 
-          <div className="glass-panel privacy-card">
-            <strong>Privacy note</strong>
+          <div className="glass-panel privacy-card scanner-safety-note">
+            <strong>Trust &amp; safety · Pattern detection notice</strong>
             <p>
-              Your raw statement was never uploaded — only the merchant names
-              and amounts shown above are saved to your account, so you can look
-              back at this scan later. Detection is automatic: check each charge
-              before you cancel anything.
+              Subscription X-Ray identifies recurring payment patterns from your
+              uploaded statement. It does not access your bank account, cancel
+              subscriptions, revoke mandates or reverse payments.
+            </p>
+            <p>
+              A repeated charge shows historical pattern matching and does not
+              prove a subscription is still active. Always verify directly with
+              your bank, UPI app, or merchant, and never share your UPI PIN,
+              OTP, card PIN, or banking password.
+            </p>
+            <p className="scanner-help-links">
+              Need step-by-step cancellation help?{" "}
+              <Link href="/help">Open the Forgotten Subscription Help Center</Link>.
             </p>
           </div>
         </m.div>

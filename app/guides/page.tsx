@@ -94,8 +94,13 @@ export default function GuidesIndexPage() {
             <p className="lede body-3">
               Clear explanations of how UPI AutoPay, NACH eMandates, and card
               Standing Instructions appear on Indian bank statements and how to
-              verify or revoke them directly with your bank or UPI app. Also see
-              our <Link href="/how-it-works" className="text-link">architecture</Link>,{" "}
+              verify or revoke them directly with your bank or UPI app. Looking
+              for quick cancellation help? Open our searchable{" "}
+              <Link href="/help" className="text-link">
+                Forgotten Subscription Help Center
+              </Link>
+              , or read our{" "}
+              <Link href="/how-it-works" className="text-link">architecture</Link>,{" "}
               <Link href="/compare" className="text-link">comparison</Link>, and{" "}
               <Link href="/faq" className="text-link">FAQ</Link>.
             </p>

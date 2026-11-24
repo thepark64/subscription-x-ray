@@ -26,6 +26,7 @@
 ## Key Public Pages
 
 - Homepage & Interactive Synthetic Demo: https://subscription-x-ray.vercel.app/
+- Forgotten Subscription Help Center: https://subscription-x-ray.vercel.app/help
 - How It Works & Privacy Architecture: https://subscription-x-ray.vercel.app/how-it-works
 - Frequently Asked Questions (AEO Hub): https://subscription-x-ray.vercel.app/faq
 - Tracker & Approach Comparison: https://subscription-x-ray.vercel.app/compare
@@ -38,8 +39,17 @@
 ## Indian Banking & Subscription Guides
 
 - Guides Hub: https://subscription-x-ray.vercel.app/guides
+- How to Find Forgotten Subscriptions Fast: https://subscription-x-ray.vercel.app/guides/find-forgotten-subscriptions
 - How to Find UPI AutoPay Mandates in India: https://subscription-x-ray.vercel.app/guides/find-upi-autopay-mandates
 - How to Cancel UPI AutoPay Mandates: https://subscription-x-ray.vercel.app/guides/cancel-upi-autopay
+- How to Cancel Credit Card Subscriptions in India: https://subscription-x-ray.vercel.app/guides/cancel-credit-card-subscriptions
+- How to Stop Recurring Card Payments Permanently: https://subscription-x-ray.vercel.app/guides/stop-recurring-card-payments
+- How to Cancel a NACH Mandate or eMandate Online: https://subscription-x-ray.vercel.app/guides/cancel-nach-mandate
+- How to Cancel a Google Play Subscription Safely: https://subscription-x-ray.vercel.app/guides/cancel-google-play-subscription
+- How to Cancel an Apple or App Store Subscription: https://subscription-x-ray.vercel.app/guides/cancel-apple-subscription
+- Identify Unknown Bank Debits & Recurring Charges: https://subscription-x-ray.vercel.app/guides/identify-unknown-bank-debits
+- Find Hidden Subscriptions in Bank Statements: https://subscription-x-ray.vercel.app/guides/find-hidden-subscriptions-bank-statement
+- Stop Forgotten Free Trial Renewals Before Billing: https://subscription-x-ray.vercel.app/guides/stop-forgotten-free-trials
 - How to Find Hidden Subscriptions in Your Bank Statement: https://subscription-x-ray.vercel.app/guides/find-hidden-subscriptions
 - How to Identify NACH and eMandate Transactions: https://subscription-x-ray.vercel.app/guides/identify-nach-emandate
 - How to Identify Recurring Card Payments: https://subscription-x-ray.vercel.app/guides/recurring-card-payments

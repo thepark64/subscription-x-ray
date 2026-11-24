@@ -31,72 +31,95 @@ function formatGuideDate(isoDate: string): string {
   return `${Number(dayStr)} ${monthLabel} ${year}`;
 }
 
+export type GuideFaqItem = {
+  q: string;
+  a: string;
+};
+
 export default function GuideLayout({
   guide,
+  faqItems,
   children,
 }: {
   guide: GuideMeta;
+  faqItems?: GuideFaqItem[];
   children: React.ReactNode;
 }) {
   const related = getRelatedGuides(guide.slug);
   const canonicalUrl = `${CANONICAL_SITE_URL}${guide.href}`;
   const formattedUpdatedDate = formatGuideDate(guide.updatedAt);
 
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: CANONICAL_SITE_URL,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Guides",
+          item: `${CANONICAL_SITE_URL}/guides`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: guide.shortTitle,
+          item: canonicalUrl,
+        },
+      ],
+    },
+    {
+      "@type": "Article",
+      headline: guide.title,
+      description: guide.description,
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+      },
+      url: canonicalUrl,
+      image: `${CANONICAL_SITE_URL}/opengraph-image.png`,
+      datePublished: guide.publishedAt,
+      dateModified: guide.updatedAt,
+      inLanguage: "en-IN",
+      author: {
+        "@type": "Organization",
+        name: "Subscription X-Ray",
+        url: CANONICAL_SITE_URL,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Subscription X-Ray",
+        url: CANONICAL_SITE_URL,
+        logo: {
+          "@type": "ImageObject",
+          url: `${CANONICAL_SITE_URL}/icon-96x96.png`,
+        },
+      },
+    },
+  ];
+
+  if (faqItems && faqItems.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.a,
+        },
+      })),
+    });
+  }
+
   const structuredData = {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: "Home",
-            item: CANONICAL_SITE_URL,
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: "Guides",
-            item: `${CANONICAL_SITE_URL}/guides`,
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: guide.shortTitle,
-            item: canonicalUrl,
-          },
-        ],
-      },
-      {
-        "@type": "Article",
-        headline: guide.title,
-        description: guide.description,
-        mainEntityOfPage: {
-          "@type": "WebPage",
-          "@id": canonicalUrl,
-        },
-        url: canonicalUrl,
-        image: `${CANONICAL_SITE_URL}/opengraph-image.png`,
-        datePublished: guide.publishedAt,
-        dateModified: guide.updatedAt,
-        inLanguage: "en-IN",
-        author: {
-          "@type": "Organization",
-          name: "Subscription X-Ray",
-          url: CANONICAL_SITE_URL,
-        },
-        publisher: {
-          "@type": "Organization",
-          name: "Subscription X-Ray",
-          url: CANONICAL_SITE_URL,
-          logo: {
-            "@type": "ImageObject",
-            url: `${CANONICAL_SITE_URL}/icon-96x96.png`,
-          },
-        },
-      },
-    ],
+    "@graph": graph,
   };
 
   return (
@@ -111,6 +134,8 @@ export default function GuideLayout({
         <div className="wrap">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
+            <CaretRight size={14} aria-hidden="true" />
+            <Link href="/help">Help Center</Link>
             <CaretRight size={14} aria-hidden="true" />
             <Link href="/guides">Guides</Link>
             <CaretRight size={14} aria-hidden="true" />
@@ -133,6 +158,18 @@ export default function GuideLayout({
             </header>
 
             <div className="guide-prose">{children}</div>
+
+            <div className="guide-disclaimer-box">
+              <p className="body-6">
+                <strong>Trust &amp; safety reminder:</strong> Subscription X-Ray
+                identifies recurring payment patterns from your uploaded
+                statement. It does not access your bank account, cancel
+                subscriptions, revoke mandates or reverse payments. Cancellation
+                steps vary by bank, payment app, merchant, and account type—never
+                share your UPI PIN, OTP, card PIN, or banking password, and
+                confirm cancellation directly with your bank or merchant.
+              </p>
+            </div>
 
             <aside className="guide-cta-box" aria-label="Scanner tool">
               <div className="guide-cta-copy">
@@ -157,8 +194,8 @@ export default function GuideLayout({
                   <span>Scan my statement for {PACK_PRICE_LABEL}</span>
                   <ArrowRight size={16} aria-hidden="true" />
                 </TrackedLink>
-                <Link className="btn btn-ghost button-md" href="/#demo">
-                  Try interactive sample
+                <Link className="btn btn-ghost button-md" href="/help">
+                  Search Help Center
                 </Link>
               </div>
             </aside>
@@ -172,9 +209,17 @@ export default function GuideLayout({
               <h2 id="related-guides-heading" className="heading-6">
                 Related statement guides
               </h2>
-              <Link href="/guides" className="text-link title-4">
-                Browse all guides
-              </Link>
+              <div className="related-guides-links">
+                <Link href="/help" className="text-link title-4">
+                  Help Center
+                </Link>
+                <span aria-hidden="true" className="muted-sep">
+                  ·
+                </span>
+                <Link href="/guides" className="text-link title-4">
+                  Browse all guides
+                </Link>
+              </div>
             </div>
             <div className="guides-grid">
               {related.map((item) => (
