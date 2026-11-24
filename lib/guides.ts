@@ -50,7 +50,7 @@ export const GUIDES: GuideMeta[] = [
     ],
     readTime: "6 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-21",
+    updatedAt: "2026-11-23",
     relatedSlugs: [
       "cancel-upi-autopay",
       "hdfc-sbi-icici-automatic-payments",
@@ -138,7 +138,7 @@ export const GUIDES: GuideMeta[] = [
     ],
     readTime: "7 min read",
     publishedAt: "2026-11-18",
-    updatedAt: "2026-11-21",
+    updatedAt: "2026-11-23",
     relatedSlugs: [
       "find-hidden-subscriptions-bank-statement",
       "find-upi-autopay-mandates",
@@ -532,7 +532,7 @@ export const GUIDES: GuideMeta[] = [
     ],
     readTime: "7 min read",
     publishedAt: "2026-11-21",
-    updatedAt: "2026-11-21",
+    updatedAt: "2026-11-23",
     relatedSlugs: [
       "read-bank-statements",
       "find-upi-autopay-mandates",

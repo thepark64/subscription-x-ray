@@ -4,6 +4,7 @@ import { ArrowRight, Check, LockSimple } from "@phosphor-icons/react/ssr";
 import AuthCallbackHandler from "@/components/AuthCallbackHandler";
 import InteractiveDemo from "@/components/InteractiveDemo";
 import { RevealSection, TaglineReveal } from "@/components/MotionPrimitives";
+import { LocalPrivacyBoundaryDiagram } from "@/components/SeoIllustrations";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TrackedLink from "@/components/TrackedLink";
@@ -316,6 +317,10 @@ export default function Home() {
                     banks and credit cards. Detects weekly, monthly, quarterly,
                     and annual cycles while filtering reversals, refunds, and ₹1
                     to ₹5 setup holds. See our{" "}
+                    <Link href="/guides/hdfc-sbi-icici-automatic-payments">
+                      HDFC, SBI &amp; ICICI export guide
+                    </Link>{" "}
+                    or{" "}
                     <Link href="/compare">approach comparison</Link>.
                   </p>
                 </div>
@@ -330,10 +335,104 @@ export default function Home() {
                     following{" "}
                     <Link href="/guides/cancel-upi-autopay">
                       UPI AutoPay cancellation steps
+                    </Link>{" "}
+                    or{" "}
+                    <Link href="/guides/find-hidden-subscriptions">
+                      hidden subscription audit checks
                     </Link>
                     .
                   </p>
                 </div>
+              </div>
+
+              <div className="home-diagram-wrap">
+                <LocalPrivacyBoundaryDiagram />
+              </div>
+
+              <div className="surface-card home-examples-card">
+                <h3 className="title-2">
+                  Representative Indian statement lines vs. detected output
+                </h3>
+                <p className="body-6">
+                  Indian banks wrap recurring charges inside changing 12-digit
+                  UPI RRNs, IFSC codes, and gateway descriptors. Here is how
+                  Subscription X-Ray normalizes representative lines locally:
+                </p>
+                <div className="guide-table-wrap">
+                  <table className="guide-table">
+                    <thead>
+                      <tr>
+                        <th>Representative statement text</th>
+                        <th>Detected merchant</th>
+                        <th>Rail &amp; action guidance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <code>UPI-AUTOPAY-403699182745-NETFLIX@OKAXIS</code>
+                        </td>
+                        <td>Netflix · ₹649/mo</td>
+                        <td>
+                          <code>UPI AutoPay</code> · Cancel plan + revoke in UPI app
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <code>NACH-DR-CULTFIT INDIA-SBIN0001234</code>
+                        </td>
+                        <td>Cult.fit · ₹999/mo</td>
+                        <td>
+                          <code>NACH / eMandate</code> · Stop via bank UMRN &amp; merchant
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <code>SI AMAZON PRIME MUMBAI IN</code>
+                        </td>
+                        <td>Amazon Prime · ₹1,499/yr</td>
+                        <td>
+                          <code>Card SI</code> · Turn off renewal + check bank SI Hub
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <code>UPI MANDATE CREATION NETFLIX@OKAXIS · ₹2</code>
+                        </td>
+                        <td>Filtered out automatically</td>
+                        <td>Excluded as ≤ ₹5 mandate setup ping</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="home-official-refs">
+                  For official mandate governance and escalation channels in India,
+                  refer to{" "}
+                  <a
+                    href="https://www.npci.org.in/product/myupi.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    NPCI MyUPI
+                  </a>
+                  ,{" "}
+                  <a
+                    href="https://upihelp.npci.org.in/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    NPCI UPI Help
+                  </a>
+                  , and the{" "}
+                  <a
+                    href="https://cms.rbi.org.in/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    RBI Complaint Management System (CMS)
+                  </a>
+                  .
+                </p>
               </div>
             </RevealSection>
           </div>

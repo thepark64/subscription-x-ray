@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CaretRight } from "@phosphor-icons/react/ssr";
+import { DetectionPipelineDiagram } from "@/components/SeoIllustrations";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TrackedLink from "@/components/TrackedLink";
@@ -163,6 +164,79 @@ export default function HowItWorksPage() {
                 </li>
               </ol>
 
+              <DetectionPipelineDiagram />
+
+              <h3>Worked example: raw bank lines to normalized results</h3>
+              <p>
+                Here is how the local detection rules treat representative Indian
+                statement rows (your actual bank narration text stays in browser
+                memory and is discarded after grouping):
+              </p>
+              <div className="guide-table-wrap">
+                <table className="guide-table">
+                  <thead>
+                    <tr>
+                      <th>Raw statement row</th>
+                      <th>Local engine treatment</th>
+                      <th>Final result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <code>UPI/401234567890/SPOTIFY/SBIN0001234/SPOTIFY@OKSBI</code>
+                      </td>
+                      <td>Strips 12-digit RRN, IFSC code, and <code>@oksbi</code> handle</td>
+                      <td>Grouped as <strong>Spotify</strong> (<code>UPI</code>)</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>UPI MANDATE CREATION NETFLIX@OKAXIS · ₹2.00</code>
+                      </td>
+                      <td>Matched as mandate creation + <code>≤ ₹5</code> setup ping</td>
+                      <td>Filtered out automatically</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>UPI/REV/412345678901/NETFLIX · ₹649.00</code>
+                      </td>
+                      <td>Matched by reversal marker (<code>REV</code>)</td>
+                      <td>Filtered out automatically</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>NACH-DR-CULTFIT INDIA-SBIN0001234 · ₹999.00</code>
+                      </td>
+                      <td>Matched <code>NACH</code> rail + ~30d interval</td>
+                      <td><strong>Cult.fit</strong> · <code>NACH / eMandate</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="guide-inline-cta">
+                <div className="guide-inline-cta-copy">
+                  <strong>Test your statement CSV or digital PDF privately</strong>
+                  <span>
+                    Browser-local parsing with zero raw file uploads. Need bank
+                    export tips first? Check our{" "}
+                    <Link href="/guides/hdfc-sbi-icici-automatic-payments">
+                      HDFC, SBI &amp; ICICI statement guide
+                    </Link>
+                    .
+                  </span>
+                </div>
+                <TrackedLink
+                  className="btn btn-primary button-sm"
+                  href="/scanner"
+                  trackLocation="how_it_works_inline"
+                  trackLabel="Scan statement for ₹69"
+                >
+                  <span>Scan statement ({PACK_PRICE_LABEL})</span>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </TrackedLink>
+              </div>
+
               <h2>3. What stays on your device vs stored in your account</h2>
               <p>
                 Privacy boundaries are enforced in source code—not just policy
@@ -257,11 +331,47 @@ export default function HowItWorksPage() {
               </ul>
 
               <p>
+                Official cancellation and escalation guidance is always anchored
+                directly to primary Indian payment bodies: review{" "}
+                <a
+                  href="https://www.npci.org.in/product/myupi.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  NPCI MyUPI
+                </a>{" "}
+                and{" "}
+                <a
+                  href="https://upihelp.npci.org.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  NPCI UPI Help
+                </a>{" "}
+                for UPI mandate lifecycle rules, or escalate unresolved bank
+                disputes through the{" "}
+                <a
+                  href="https://cms.rbi.org.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  RBI Complaint Management System (CMS)
+                </a>
+                .
+              </p>
+
+              <p>
                 Still have questions? Read our{" "}
-                <Link href="/faq">complete AEO &amp; product FAQ</Link>, compare{" "}
+                <Link href="/faq">complete AEO &amp; product FAQ</Link>, browse
+                our{" "}
+                <Link href="/help">Forgotten Subscription Help Center</Link>,
+                compare{" "}
                 <Link href="/compare">statement scanners vs other trackers</Link>
-                , or browse our{" "}
-                <Link href="/guides">Indian banking statement guides</Link>.
+                , or read our{" "}
+                <Link href="/guides/bank-statement-privacy-security">
+                  statement privacy guide
+                </Link>
+                .
               </p>
             </div>
 

@@ -308,5 +308,44 @@ describe("SEO metadata routes", () => {
     expect(privacyPage).toContain("Google Tag Manager");
     expect(privacyPage).toContain("Google Analytics 4");
     expect(privacyPage).toContain("never sent through these analytics events");
+
+    const seoIllustrations = readFileSync(
+      path.join(process.cwd(), "components/SeoIllustrations.tsx"),
+      "utf8"
+    );
+    expect(seoIllustrations).toContain("LocalPrivacyBoundaryDiagram");
+    expect(seoIllustrations).toContain("DetectionPipelineDiagram");
+    expect(seoIllustrations).toContain("NarrationNormalizationDiagram");
+    expect(seoIllustrations).toContain("MultiAppUpiDiagram");
+    expect(seoIllustrations).toContain("BankStatementFormatsDiagram");
+
+    const homePage = readFileSync(
+      path.join(process.cwd(), "app/page.tsx"),
+      "utf8"
+    );
+    expect(homePage).toContain("LocalPrivacyBoundaryDiagram");
+    expect(homePage).toContain("https://www.npci.org.in/product/myupi.html");
+    expect(homePage).toContain("https://cms.rbi.org.in/");
+
+    const howItWorks = readFileSync(
+      path.join(process.cwd(), "app/how-it-works/page.tsx"),
+      "utf8"
+    );
+    expect(howItWorks).toContain("DetectionPipelineDiagram");
+    expect(howItWorks).toContain("https://upihelp.npci.org.in/");
+
+    for (const slug of [
+      "find-hidden-subscriptions",
+      "find-upi-autopay-mandates",
+      "hdfc-sbi-icici-automatic-payments",
+    ]) {
+      const content = readFileSync(
+        path.join(process.cwd(), "app/guides", slug, "page.tsx"),
+        "utf8"
+      );
+      expect(content).toContain("faqItems={FAQ_ITEMS}");
+      expect(content).toContain("https://upihelp.npci.org.in/");
+      expect(content).toContain('rel="noopener noreferrer"');
+    }
   }, 15000);
 });

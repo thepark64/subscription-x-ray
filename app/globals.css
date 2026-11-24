@@ -3567,6 +3567,108 @@ h2 {
   gap: 12px;
 }
 
+.seo-figure {
+  margin: 24px 0;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.seo-diagram-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.seo-figure figcaption {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 18px;
+}
+
+.guide-inline-cta {
+  margin: 24px 0;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-warm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.guide-inline-cta-copy {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.guide-inline-cta-copy strong {
+  display: block;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.guide-inline-cta-copy span {
+  display: block;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.guide-prose a.btn {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.guide-prose a.btn-primary {
+  color: var(--accent-ink);
+}
+
+.guide-prose a.btn-primary:hover {
+  color: var(--accent-ink);
+}
+
+.home-diagram-wrap {
+  margin-top: 24px;
+}
+
+.home-examples-card {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.home-examples-card h3 {
+  margin: 0 0 8px;
+}
+
+.home-examples-card > p {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.home-examples-card code {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.home-official-refs {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.home-official-refs a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .related-guides-section {
   max-width: 820px;
   margin: 40px auto 0;

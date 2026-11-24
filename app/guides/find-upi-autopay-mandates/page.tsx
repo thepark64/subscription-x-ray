@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import { ArrowRight } from "@phosphor-icons/react/ssr";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
+import { MultiAppUpiDiagram } from "@/components/SeoIllustrations";
+import TrackedLink from "@/components/TrackedLink";
+import { PACK_PRICE_LABEL, PACK_SIZE } from "@/lib/config";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("find-upi-autopay-mandates")!;
@@ -34,9 +38,28 @@ export const metadata: Metadata = {
   },
 };
 
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Why did I see a ₹1 or ₹2 UPI AutoPay entry that did not repeat?",
+    a: "Merchants often trigger a small ₹1–₹5 registration or penny-drop authentication check when you authorize a UPI AutoPay mandate. It is a setup ping rather than your recurring subscription fee.",
+  },
+  {
+    q: "Does Subscription X-Ray connect directly to Google Pay or PhonePe?",
+    a: "No. Subscription X-Ray never connects to your UPI apps, bank logins, or NPCI APIs. It analyzes CSV and digital PDF bank statements locally in browser memory.",
+  },
+  {
+    q: "How many months of bank statements should I export?",
+    a: "Export at least 3 to 6 months to detect monthly subscriptions accurately, and 13+ months if you want to catch forgotten annual memberships.",
+  },
+  {
+    q: "Where do I find a UPI AutoPay mandate created in an app I already uninstalled?",
+    a: "Uninstalling Google Pay, PhonePe, or Paytm does not stop the mandate. Reinstall the app with your bank-linked mobile number, inspect your bank mobile app's UPI mandate tab, or check NPCI's official MyUPI portal information.",
+  },
+];
+
 export default function FindUpiAutopayMandatesPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>What UPI AutoPay is</h2>
       <p>
         <strong>UPI AutoPay</strong> is a recurring-payment feature built by the
@@ -62,19 +85,19 @@ export default function FindUpiAutopayMandatesPage() {
       <p>
         When a user approves a UPI AutoPay mandate in Google Pay, PhonePe,
         Paytm, BHIM, or a bank UPI app, the merchant normally triggers a tiny
-        setup or authorization check—often ₹1 or ₹2—before full subscription
+        setup or authorization check—typically ₹1 to ₹5—before full subscription
         billing begins. Later, actual cycle debits execute through the same
         mandate ID, but your bank statement line looks different every single
         month because banks append a new UPI Reference Number (RRN) or settlement
         timestamp to each debit.
       </p>
       <p>
-        Checking only one UPI app can also leave blind spots. You might have
-        approved one subscription through PhonePe using your SBI account,
-        another inside Google Pay using HDFC, and a third directly inside your
-        bank&apos;s BHIM app. All of those mandates eventually settle in one
-        place: your underlying bank statement.
+        Checking only one UPI app leaves blind spots: mandates created in an
+        older app continue debiting your underlying bank account even if you no
+        longer open that app daily.
       </p>
+
+      <MultiAppUpiDiagram />
 
       <h2>How to spot UPI AutoPay entries in Indian bank statements</h2>
       <p>
@@ -130,29 +153,68 @@ export default function FindUpiAutopayMandatesPage() {
       <p>
         Notice that plain UPI strings sometimes omit the word{" "}
         <code>AUTOPAY</code> even when a recurring mandate triggered the debit.
-        If you want a refresher on every abbreviation banks print around UPI
-        strings, see our guide on{" "}
+        See our{" "}
+        <Link href="/guides/hdfc-sbi-icici-automatic-payments">
+          HDFC, SBI &amp; ICICI statement export guide
+        </Link>{" "}
+        or{" "}
         <Link href="/guides/read-bank-statements">
           reading Indian bank statement narrations
-        </Link>
+        </Link>{" "}
+        for exact column and prefix breakdowns.
+      </p>
+
+      <h2>Where to check active AutoPay inside major UPI apps</h2>
+      <p>
+        Exact button wording varies slightly by app version and bank, so check
+        every UPI app linked to your savings account:
+      </p>
+      <ul>
+        <li>
+          <strong>Google Pay:</strong> Profile photo → <em>Autopay</em> → review{" "}
+          <em>Live</em> mandates.
+        </li>
+        <li>
+          <strong>PhonePe:</strong> Profile icon → <em>AutoPay</em> (or{" "}
+          <em>Automatic Payments</em>).
+        </li>
+        <li>
+          <strong>Paytm:</strong> Profile icon → <em>UPI &amp; Payment Settings</em>{" "}
+          → <em>Automatic Payments</em>.
+        </li>
+        <li>
+          <strong>BHIM (NPCI):</strong> Home → <em>My Mandates</em> →{" "}
+          <em>Active</em>.
+        </li>
+      </ul>
+      <p>
+        For official NPCI UPI user awareness tools and mandate complaint paths,
+        consult{" "}
+        <a
+          href="https://www.npci.org.in/product/myupi.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          NPCI MyUPI
+        </a>{" "}
+        and{" "}
+        <a
+          href="https://upihelp.npci.org.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          NPCI UPI Help
+        </a>
         .
       </p>
 
       <h2>How to audit UPI AutoPay manually vs with Subscription X-Ray</h2>
-      <h3>1. Checking inside your UPI apps</h3>
-      <p>
-        Every NPCI-compliant UPI app includes an <em>Autopay</em>,{" "}
-        <em>Automatic Payments</em>, or <em>Mandates</em> area under your
-        profile settings. Reviewing that screen across every UPI app installed on
-        your phone shows mandates linked to that specific app and UPI ID.
-      </p>
-
-      <h3>2. Checking across months via your bank statement</h3>
       <p>
         Exporting 3 to 12 months of bank statements as CSV or digital PDF lets
         you inspect actual debits regardless of which app originally set up the
         mandate. <Link href="/scanner">Subscription X-Ray</Link> parses that
-        statement directly inside your browser and automates the tedious cleanup:
+        statement strictly inside browser memory—raw files and PDF passwords
+        never leave your device—and automates the cleanup:
       </p>
       <ul>
         <li>
@@ -172,6 +234,26 @@ export default function FindUpiAutopayMandatesPage() {
           confidence ratings based on cadence consistency.
         </li>
       </ul>
+
+      <div className="guide-inline-cta">
+        <div className="guide-inline-cta-copy">
+          <strong>Spot every UPI AutoPay &amp; hidden debit in one scan</strong>
+          <span>
+            {PACK_PRICE_LABEL} once unlocks {PACK_SIZE} non-expiring browser-local
+            scans. Valid statements with zero recurring charges spend zero
+            credits.
+          </span>
+        </div>
+        <TrackedLink
+          className="btn btn-primary button-sm"
+          href="/scanner"
+          trackLocation="guide_upi_autopay_inline"
+          trackLabel="Scan bank statement"
+        >
+          <span>Scan bank statement</span>
+          <ArrowRight size={15} aria-hidden="true" />
+        </TrackedLink>
+      </div>
 
       <h2>Limitations and possible false positives</h2>
       <p>
@@ -208,11 +290,15 @@ export default function FindUpiAutopayMandatesPage() {
 
       <h2>Next step once you locate an unwanted mandate</h2>
       <p>
-        Finding a recurring UPI debit is half the job—revoking the mandate inside
-        your UPI app and cancelling with the merchant prevents the next billing
-        cycle. Follow our companion guide on{" "}
+        Finding a recurring UPI debit is half the job—always close the plan with
+        the merchant and revoke the mandate inside your UPI app (requiring your
+        UPI PIN) so no future cycle fires. Follow our companion guide on{" "}
         <Link href="/guides/cancel-upi-autopay">
           how to cancel UPI AutoPay mandates
+        </Link>
+        , catch upcoming{" "}
+        <Link href="/guides/stop-forgotten-free-trials">
+          free trial renewals
         </Link>
         , or compare bank-level debits in{" "}
         <Link href="/guides/identify-nach-emandate">
@@ -223,29 +309,12 @@ export default function FindUpiAutopayMandatesPage() {
 
       <h2>Frequently asked questions</h2>
       <div className="guide-faq-list">
-        <div className="guide-faq-item">
-          <h3>Why did I see a ₹1 or ₹2 UPI AutoPay entry that did not repeat?</h3>
-          <p>
-            Merchants often trigger a small registration or penny-drop
-            authentication charge when you authorize a UPI AutoPay mandate. It
-            is a setup ping rather than your recurring subscription fee.
-          </p>
-        </div>
-        <div className="guide-faq-item">
-          <h3>Does Subscription X-Ray connect directly to Google Pay or PhonePe?</h3>
-          <p>
-            No. Subscription X-Ray never connects to your UPI apps, bank logins,
-            or NPCI APIs. It analyzes CSV and digital PDF bank statements locally
-            in browser memory.
-          </p>
-        </div>
-        <div className="guide-faq-item">
-          <h3>How many months of bank statements should I export?</h3>
-          <p>
-            At least 3 to 6 months to detect monthly subscriptions accurately, and
-            13+ months if you want to catch forgotten annual memberships.
-          </p>
-        </div>
+        {FAQ_ITEMS.map((item) => (
+          <div className="guide-faq-item" key={item.q}>
+            <h3>{item.q}</h3>
+            <p>{item.a}</p>
+          </div>
+        ))}
       </div>
     </GuideLayout>
   );
