@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("bank-statement-privacy-security")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Can I remove a saved scan or delete my entire account later?",
+    a: "Yes. Signed-in users can delete individual scans directly from Scan History or permanently delete their account and saved summaries inside the scanner top bar.",
+  },
+  {
+    q: "Does Subscription X-Ray store my card number or UPI PIN when I pay ₹69?",
+    a: "No. Checkout runs directly inside Cashfree Payments. Subscription X-Ray stores only payment verification metadata (Cashfree order and payment reference, amount, and status) to grant your 12 credits.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function BankStatementPrivacySecurityPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>Why sharing bank logins or raw statements carries risk</h2>
       <p>
         Bank statements expose far more than software subscriptions: they

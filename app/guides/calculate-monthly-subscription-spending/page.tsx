@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("calculate-monthly-subscription-spending")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Should ₹1 or ₹2 mandate verification debits count toward monthly spend?",
+    a: "No. Payment processors and banks routinely debit and reverse ₹1–₹5 to register an AutoPay or card mandate. Subscription X-Ray filters small verification holds and reversals out of your recurring total.",
+  },
+  {
+    q: "How many months of statements do I need to include annual subscriptions?",
+    a: "You need at least two charges to detect an interval automatically—so catching annual renewals requires exporting 13 to 15 months of history, whereas 3 to 6 months catches weekly, monthly, and quarterly plans.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function CalculateMonthlySubscriptionSpendingPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>Why adding raw renewal bills distorts your monthly total</h2>
       <p>
         If you total only the subscriptions that hit in a single 30-day window,

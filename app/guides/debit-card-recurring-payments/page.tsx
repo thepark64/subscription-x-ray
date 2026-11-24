@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("debit-card-recurring-payments")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Why do some debit card subscriptions not show SI in the narration?",
+    a: "Many bank statement formats only print the card prefix (such as ECOM or POS) plus the merchant descriptor. Checking multiple months of date intervals (~30 days or ~365 days) identifies repeating card debits even when SI is omitted.",
+  },
+  {
+    q: "Does blocking a debit card stop recurring NACH or UPI AutoPay debits?",
+    a: "No. Blocking or replacing a debit card stops future charges billed to that card number, but NACH mandates and UPI AutoPay pull directly from your bank account. Revoke each mandate on its respective rail.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function DebitCardRecurringPaymentsPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>Where debit card subscriptions appear in India</h2>
       <p>
         Unlike credit cards, recurring debit card subscriptions pull funds

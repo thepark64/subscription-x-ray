@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("identify-nach-emandate")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Is NACH the same as UPI AutoPay?",
+    a: "No. Both are operated by NPCI, but UPI AutoPay executes over UPI handles inside UPI apps, whereas NACH / e-Mandates operate directly between bank accounts using an account-level UMRN.",
+  },
+  {
+    q: "Does cancelling a NACH e-Mandate cancel my loan or subscription?",
+    a: "No. Cancelling a NACH mandate only stops automatic bank debits. Any active loan EMI, insurance policy, or service contract remains valid until closed with the lender or merchant.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function IdentifyNachEmandatePage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>What NACH and e-Mandate mean in Indian banking</h2>
       <p>
         <strong>NACH (National Automated Clearing House)</strong> is a

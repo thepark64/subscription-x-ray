@@ -67,6 +67,16 @@ const STRUCTURED_DATA = {
       url: `${CANONICAL_SITE_URL}/help`,
       inLanguage: "en-IN",
       about: HELP_CENTER_CATEGORIES,
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: GUIDES.length,
+        itemListElement: GUIDES.map((guide, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: guide.title,
+          url: `${CANONICAL_SITE_URL}${guide.href}`,
+        })),
+      },
     },
   ],
 };

@@ -31,6 +31,15 @@ describe("SEO metadata routes", () => {
     ]);
     expect(urls).toHaveLength(30);
     expect(urls.some((u) => /\/(api|login|scanner|reset-password)/.test(u))).toBe(false);
+
+    for (const guide of GUIDES) {
+      const match = entries.find(
+        (entry) => entry.url === `https://subscription-x-ray.vercel.app${guide.href}`
+      );
+      expect(match?.lastModified).toEqual(
+        new Date(`${guide.updatedAt}T00:00:00.000Z`)
+      );
+    }
   });
 
   it("configures robots.txt allowing site indexing and pointing to sitemap.xml", () => {
@@ -42,7 +51,7 @@ describe("SEO metadata routes", () => {
     const rules = Array.isArray(config.rules) ? config.rules : [config.rules];
     expect(rules[0].userAgent).toBe("*");
     expect(rules[0].allow).toBe("/");
-    expect(rules[0].disallow).toEqual(["/api/", "/reset-password"]);
+    expect(rules[0].disallow).toEqual(["/api/"]);
     expect(
       rules.some(
         (r) =>
@@ -300,6 +309,15 @@ describe("SEO metadata routes", () => {
     );
     expect(guideLayout).toContain("guide.updatedAt");
     expect(guideLayout).not.toContain("Updated 18 Nov 2026");
+    expect(guideLayout).toContain('name: "Help Center"');
+    expect(guideLayout).toContain("position: 4");
+
+    const guidesIndexPage = readFileSync(
+      path.join(process.cwd(), "app/guides/page.tsx"),
+      "utf8"
+    );
+    expect(guidesIndexPage).toContain('"@type": "ItemList"');
+    expect(helpPage).toContain('"@type": "ItemList"');
 
     const privacyPage = readFileSync(
       path.join(process.cwd(), "app/privacy/page.tsx"),
@@ -346,6 +364,21 @@ describe("SEO metadata routes", () => {
       expect(content).toContain("faqItems={FAQ_ITEMS}");
       expect(content).toContain("https://upihelp.npci.org.in/");
       expect(content).toContain('rel="noopener noreferrer"');
+    }
+
+    for (const slug of [
+      "identify-nach-emandate",
+      "recurring-card-payments",
+      "read-bank-statements",
+      "debit-card-recurring-payments",
+      "calculate-monthly-subscription-spending",
+      "bank-statement-privacy-security",
+    ]) {
+      const content = readFileSync(
+        path.join(process.cwd(), "app/guides", slug, "page.tsx"),
+        "utf8"
+      );
+      expect(content).toContain("faqItems={FAQ_ITEMS}");
     }
   }, 15000);
 });

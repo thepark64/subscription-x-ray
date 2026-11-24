@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("recurring-card-payments")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Why are my credit card subscriptions billed in USD changing slightly in rupees?",
+    a: "Exchange rate movements and bank forex markups shift the final INR amount slightly each month even when the USD subscription price is unchanged.",
+  },
+  {
+    q: "Does blocking or replacing my card always stop international subscriptions?",
+    a: "Not reliably—card networks offer merchant account-updater services that can carry active recurring tokens to replacement cards. Always cancel directly with the merchant and revoke the Standing Instruction through your issuer.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function RecurringCardPaymentsPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>How recurring card payments work in India</h2>
       <p>
         When you subscribe to a streaming service, cloud suite, software tool,

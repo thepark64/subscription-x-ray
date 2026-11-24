@@ -32,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...GUIDES.map((guide) => ({
       url: `${CANONICAL_SITE_URL}${guide.href}`,
-      lastModified,
+      lastModified: new Date(`${guide.updatedAt}T00:00:00.000Z`),
       changeFrequency: "monthly" as const,
       priority: 0.85,
     })),

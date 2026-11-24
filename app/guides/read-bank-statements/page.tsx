@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GuideLayout from "@/components/GuideLayout";
+import GuideLayout, { type GuideFaqItem } from "@/components/GuideLayout";
 import { getGuideBySlug } from "@/lib/guides";
 
 const guide = getGuideBySlug("read-bank-statements")!;
+
+const FAQ_ITEMS: GuideFaqItem[] = [
+  {
+    q: "Should I download CSV or PDF from NetBanking when auditing subscriptions?",
+    a: "CSV is the cleanest format because column boundaries never wrap across lines. A digital PDF (including password-protected bank PDFs) also works well as long as the text is selectable—avoid scanned image PDFs.",
+  },
+  {
+    q: "What is the difference between Transaction Date and Value Date?",
+    a: "Transaction Date records when the debit took place, whereas Value Date records when funds settled for bank interest accounting. Use Transaction Date when checking subscription billing cycles.",
+  },
+];
 
 export const metadata: Metadata = {
   title: guide.title,
@@ -36,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function ReadBankStatementsPage() {
   return (
-    <GuideLayout guide={guide}>
+    <GuideLayout guide={guide} faqItems={FAQ_ITEMS}>
       <h2>The core columns on every Indian bank statement</h2>
       <p>
         Whether you download a CSV export or a password-protected PDF from HDFC,

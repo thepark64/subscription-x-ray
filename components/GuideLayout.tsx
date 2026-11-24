@@ -62,12 +62,18 @@ export default function GuideLayout({
         {
           "@type": "ListItem",
           position: 2,
+          name: "Help Center",
+          item: `${CANONICAL_SITE_URL}/help`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
           name: "Guides",
           item: `${CANONICAL_SITE_URL}/guides`,
         },
         {
           "@type": "ListItem",
-          position: 3,
+          position: 4,
           name: guide.shortTitle,
           item: canonicalUrl,
         },
